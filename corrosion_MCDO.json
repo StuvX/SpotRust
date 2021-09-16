@@ -1,0 +1,76 @@
+{
+  "data" : {
+    "train_file" : "train.txt",
+    "val_file" : "val.txt",
+    "pop_mean" : [0,0,0],
+    "pop_std0" : [0,0,0],
+    "background_colour" : [255,0,0],
+    "class_colours" : [[255,0,0],[255,0,255]],
+    "class_weights" : [1.0, 7.035],
+    "class_labels" : ["background","corrosion"],
+    "overlay_colours" : [[0,255,0,0],[255,0,255,200]]
+  },
+
+  "arch" : {
+    "config" : "HRNet_do",
+    "bayes" : true,
+    "recon" : false,
+    "num_classes" : 1,
+    "image_shape" : [3,480,640],
+    "ALIGN_CORNERS" : false,
+    "EXTRA" : {
+      "FINAL_CONV_KERNEL" : 1,
+      "STAGE1" : {
+        "NUM_MODULES" : 1,
+        "NUM_BRANCHES" : 1,
+        "BLOCK" : "BOTTLENECK",
+        "NUM_BLOCKS" : [4],
+        "NUM_CHANNELS" : [64],
+        "FUSE_METHOD" : "SUM"
+      },
+      "STAGE2" : {
+        "NUM_MODULES" : 1,
+        "NUM_BRANCHES" : 2,
+        "BLOCK" : "BASIC",
+        "NUM_BLOCKS" : [4,4],
+        "NUM_CHANNELS" : [48,96],
+        "FUSE_METHOD" : "SUM"
+      },
+      "STAGE3" : {
+        "NUM_MODULES" : 4,
+        "NUM_BRANCHES" : 3,
+        "BLOCK" : "BASIC",
+        "NUM_BLOCKS" : [4,4,4],
+        "NUM_CHANNELS" : [48,96,192],
+        "FUSE_METHOD" : "SUM"
+      },
+      "STAGE4" : {
+        "NUM_MODULES" : 3,
+        "NUM_BRANCHES" : 4,
+        "BLOCK" : "BASIC",
+        "NUM_BLOCKS" : [4,4,4,4],
+        "NUM_CHANNELS" : [48,96,192,384],
+        "FUSE_METHOD" : "SUM"
+      }
+    }
+  },
+
+  "solver" : {
+    "loss" : "xentropy",
+    "opt" : "Adam",
+    "batch_size" : 1,
+    "epsilon" : 0.000000001,
+    "adam_eps" : 0.0001,
+    "learning_rate" : 0.0003,
+    "sched_factor" : 0.9,
+    "sched_thresh" : 0.0001,
+    "sched_patience" : 2,
+    "learning_rate_step" : null,
+    "max_steps" : 1000,
+    "var_loss_multiplier" : 0.1,
+    "num_workers" : 4,
+    "channels" : 3,
+    "var_loss_epoch" : 0
+  }
+
+}

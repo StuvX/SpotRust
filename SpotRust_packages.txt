@@ -1,0 +1,13 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: osx-64
+
+numpy~=1.20.1
+torch~=1.7.1
+matplotlib~=3.3.4
+pandas~=1.2.3
+torchvision~=0.8.2
+pillow~=8.1.1
+scikit-image~=0.18.1
+simpleitk~=2.0.2
+diskcache~=4.1.0

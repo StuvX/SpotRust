@@ -1,0 +1,138 @@
+Index: .idea/CapsNetSEG.iml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<module type=\"PYTHON_MODULE\" version=\"4\">\n  <component name=\"NewModuleRootManager\">\n    <content url=\"file://$MODULE_DIR$\" />\n    <orderEntry type=\"inheritedJdk\" />\n    <orderEntry type=\"sourceFolder\" forTests=\"false\" />\n  </component>\n  <component name=\"TestRunnerService\">\n    <option name=\"PROJECT_TEST_RUNNER\" value=\"Unittests\" />\n  </component>\n</module>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/CapsNetSEG.iml	(revision 82b55154f16a49d6d30bca7e73057091960984d4)
++++ .idea/CapsNetSEG.iml	(date 1631765506504)
+@@ -2,10 +2,11 @@
+ <module type="PYTHON_MODULE" version="4">
+   <component name="NewModuleRootManager">
+     <content url="file://$MODULE_DIR$" />
+-    <orderEntry type="inheritedJdk" />
++    <orderEntry type="jdk" jdkName="Python 3.7 (pt171)" jdkType="Python SDK" />
+     <orderEntry type="sourceFolder" forTests="false" />
+   </component>
+-  <component name="TestRunnerService">
+-    <option name="PROJECT_TEST_RUNNER" value="Unittests" />
++  <component name="PackageRequirementsSettings">
++    <option name="requirementsPath" value="$MODULE_DIR$/SpotRust_packages.txt" />
++    <option name="removeUnused" value="true" />
+   </component>
+ </module>
+\ No newline at end of file
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"BranchesTreeState\">\n    <expand>\n      <path>\n        <item name=\"ROOT\" type=\"e8cecc67:BranchNodeDescriptor\" />\n        <item name=\"LOCAL_ROOT\" type=\"e8cecc67:BranchNodeDescriptor\" />\n      </path>\n      <path>\n        <item name=\"ROOT\" type=\"e8cecc67:BranchNodeDescriptor\" />\n        <item name=\"REMOTE_ROOT\" type=\"e8cecc67:BranchNodeDescriptor\" />\n      </path>\n      <path>\n        <item name=\"ROOT\" type=\"e8cecc67:BranchNodeDescriptor\" />\n        <item name=\"REMOTE_ROOT\" type=\"e8cecc67:BranchNodeDescriptor\" />\n        <item name=\"GROUP_NODE:origin\" type=\"e8cecc67:BranchNodeDescriptor\" />\n      </path>\n    </expand>\n    <select />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"9cc8eba1-91cc-47ec-976f-3ea8476f63b8\" name=\"Default Changelist\" comment=\"\">\n      <change beforePath=\"$PROJECT_DIR$/.idea/workspace.xml\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/.idea/workspace.xml\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/README.md\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/README.md\" afterDir=\"false\" />\n      <change beforePath=\"$PROJECT_DIR$/infer_bayes_var.py\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/infer_bayes_var.py\" afterDir=\"false\" />\n    </list>\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n  </component>\n  <component name=\"JupyterTrust\" id=\"4ad96a60-b96a-40da-8f08-30a65c069f7c\" />\n  <component name=\"ProjectId\" id=\"1hZWtQvDsOUS6Fs1uCSWqKJZ1H6\" />\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\">\n    <property name=\"RunOnceActivity.OpenProjectViewOnStart\" value=\"true\" />\n    <property name=\"WebServerToolWindowFactoryState\" value=\"false\" />\n    <property name=\"last_opened_file_path\" value=\"$PROJECT_DIR$\" />\n    <property name=\"run.code.analysis.last.selected.profile\" value=\"pProject Default\" />\n  </component>\n  <component name=\"RunManager\">\n    <configuration default=\"true\" type=\"PythonConfigurationType\" factoryName=\"Python\">\n      <module name=\"CapsNetSEG\" />\n      <option name=\"INTERPRETER_OPTIONS\" value=\"\" />\n      <option name=\"PARENT_ENVS\" value=\"true\" />\n      <envs>\n        <env name=\"PYTHONUNBUFFERED\" value=\"1\" />\n      </envs>\n      <option name=\"SDK_HOME\" value=\"/opt/miniconda2/envs/pt/bin/python\" />\n      <option name=\"WORKING_DIRECTORY\" value=\"\" />\n      <option name=\"IS_MODULE_SDK\" value=\"false\" />\n      <option name=\"ADD_CONTENT_ROOTS\" value=\"true\" />\n      <option name=\"ADD_SOURCE_ROOTS\" value=\"true\" />\n      <EXTENSION ID=\"PythonCoverageRunConfigurationExtension\" runner=\"coverage.py\" />\n      <option name=\"SCRIPT_NAME\" value=\"\" />\n      <option name=\"PARAMETERS\" value=\"\" />\n      <option name=\"SHOW_COMMAND_LINE\" value=\"false\" />\n      <option name=\"EMULATE_TERMINAL\" value=\"false\" />\n      <option name=\"MODULE_MODE\" value=\"false\" />\n      <option name=\"REDIRECT_INPUT\" value=\"false\" />\n      <option name=\"INPUT_FILE\" value=\"\" />\n      <method v=\"2\" />\n    </configuration>\n  </component>\n  <component name=\"SpellCheckerSettings\" RuntimeDictionaries=\"0\" Folders=\"0\" CustomDictionaries=\"0\" DefaultDictionary=\"application-level\" UseSingleDictionary=\"true\" transferred=\"true\" />\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"9cc8eba1-91cc-47ec-976f-3ea8476f63b8\" name=\"Default Changelist\" comment=\"\" />\n      <created>1600219308513</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1600219308513</updated>\n      <workItem from=\"1600219309630\" duration=\"3107000\" />\n    </task>\n    <servers />\n  </component>\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n  </component>\n  <component name=\"Vcs.Log.Tabs.Properties\">\n    <option name=\"TAB_STATES\">\n      <map>\n        <entry key=\"MAIN\">\n          <value>\n            <State />\n          </value>\n        </entry>\n      </map>\n    </option>\n  </component>\n  <component name=\"WindowStateProjectService\">\n    <state x=\"278\" y=\"237\" key=\"#com.intellij.execution.impl.EditConfigurationsDialog\" timestamp=\"1600219351966\">\n      <screen x=\"0\" y=\"23\" width=\"1680\" height=\"1027\" />\n    </state>\n    <state x=\"278\" y=\"237\" key=\"#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1680.1027@0.23.1680.1027\" timestamp=\"1600219351966\" />\n    <state x=\"552\" y=\"329\" key=\"#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog\" timestamp=\"1600220277938\">\n      <screen x=\"0\" y=\"23\" width=\"1680\" height=\"1027\" />\n    </state>\n    <state x=\"552\" y=\"329\" key=\"#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.23.1680.1027@0.23.1680.1027\" timestamp=\"1600220277938\" />\n    <state x=\"680\" y=\"378\" key=\"ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1\" timestamp=\"1600222627190\">\n      <screen x=\"0\" y=\"23\" width=\"1680\" height=\"1027\" />\n    </state>\n    <state x=\"680\" y=\"378\" key=\"ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.23.1680.1027@0.23.1680.1027\" timestamp=\"1600222627190\" />\n    <state x=\"414\" y=\"315\" key=\"Vcs.Push.Dialog.v2\" timestamp=\"1600219890971\">\n      <screen x=\"0\" y=\"23\" width=\"1680\" height=\"1027\" />\n    </state>\n    <state x=\"414\" y=\"315\" key=\"Vcs.Push.Dialog.v2/0.23.1680.1027@0.23.1680.1027\" timestamp=\"1600219890971\" />\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- .idea/workspace.xml	(revision 82b55154f16a49d6d30bca7e73057091960984d4)
++++ .idea/workspace.xml	(date 1631768287575)
+@@ -1,5 +1,8 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
++  <component name="AutoImportSettings">
++    <option name="autoReloadType" value="SELECTIVE" />
++  </component>
+   <component name="BranchesTreeState">
+     <expand>
+       <path>
+@@ -19,10 +22,9 @@
+     <select />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="9cc8eba1-91cc-47ec-976f-3ea8476f63b8" name="Default Changelist" comment="">
++    <list default="true" id="9cc8eba1-91cc-47ec-976f-3ea8476f63b8" name="Default Changelist" comment="fixed missing util functions">
++      <change beforePath="$PROJECT_DIR$/.idea/CapsNetSEG.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/CapsNetSEG.iml" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+-      <change beforePath="$PROJECT_DIR$/infer_bayes_var.py" beforeDir="false" afterPath="$PROJECT_DIR$/infer_bayes_var.py" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+@@ -43,6 +45,12 @@
+     <property name="WebServerToolWindowFactoryState" value="false" />
+     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
++    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyIntegratedToolsModulesConfigurable" />
++  </component>
++  <component name="RecentsManager">
++    <key name="CopyFile.RECENT_KEYS">
++      <recent name="$PROJECT_DIR$" />
++    </key>
+   </component>
+   <component name="RunManager">
+     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+@@ -76,8 +84,27 @@
+       <option name="number" value="Default" />
+       <option name="presentableId" value="Default" />
+       <updated>1600219308513</updated>
+-      <workItem from="1600219309630" duration="3107000" />
++      <workItem from="1600219309630" duration="4549000" />
++      <workItem from="1600723942717" duration="596000" />
++      <workItem from="1601011470074" duration="20000" />
++      <workItem from="1603429789985" duration="3000" />
++      <workItem from="1631247547128" duration="10234000" />
++    </task>
++    <task id="LOCAL-00001" summary="fixed missing util functions">
++      <created>1600724519210</created>
++      <option name="number" value="00001" />
++      <option name="presentableId" value="LOCAL-00001" />
++      <option name="project" value="LOCAL" />
++      <updated>1600724519210</updated>
++    </task>
++    <task id="LOCAL-00002" summary="initial commit">
++      <created>1631768058348</created>
++      <option name="number" value="00002" />
++      <option name="presentableId" value="LOCAL-00002" />
++      <option name="project" value="LOCAL" />
++      <updated>1631768058349</updated>
+     </task>
++    <option name="localTasksCounter" value="3" />
+     <servers />
+   </component>
+   <component name="TypeScriptGeneratedFilesManager">
+@@ -93,23 +120,25 @@
+         </entry>
+       </map>
+     </option>
++    <option name="oldMeFiltersMigrated" value="true" />
++  </component>
++  <component name="VcsManagerConfiguration">
++    <MESSAGE value="fixed missing util functions" />
++    <MESSAGE value="initial commit" />
++    <option name="LAST_COMMIT_MESSAGE" value="initial commit" />
+   </component>
+   <component name="WindowStateProjectService">
+-    <state x="278" y="237" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1600219351966">
+-      <screen x="0" y="23" width="1680" height="1027" />
++    <state x="802" y="276" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1631248539723">
++      <screen x="0" y="25" width="1680" height="1025" />
+     </state>
+-    <state x="278" y="237" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1680.1027@0.23.1680.1027" timestamp="1600219351966" />
+-    <state x="552" y="329" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1600220277938">
+-      <screen x="0" y="23" width="1680" height="1027" />
++    <state x="802" y="276" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.25.1680.1025@0.25.1680.1025" timestamp="1631248539723" />
++    <state x="529" y="75" key="SettingsEditor" timestamp="1631765034400">
++      <screen x="0" y="25" width="1680" height="1025" />
+     </state>
+-    <state x="552" y="329" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.23.1680.1027@0.23.1680.1027" timestamp="1600220277938" />
+-    <state x="680" y="378" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1600222627190">
+-      <screen x="0" y="23" width="1680" height="1027" />
++    <state x="529" y="75" key="SettingsEditor/0.25.1680.1025@0.25.1680.1025" timestamp="1631765034400" />
++    <state x="441" y="255" key="Vcs.Push.Dialog.v2" timestamp="1631768195936">
++      <screen x="0" y="25" width="1680" height="1025" />
+     </state>
+-    <state x="680" y="378" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.23.1680.1027@0.23.1680.1027" timestamp="1600222627190" />
+-    <state x="414" y="315" key="Vcs.Push.Dialog.v2" timestamp="1600219890971">
+-      <screen x="0" y="23" width="1680" height="1027" />
+-    </state>
+-    <state x="414" y="315" key="Vcs.Push.Dialog.v2/0.23.1680.1027@0.23.1680.1027" timestamp="1600219890971" />
++    <state x="441" y="255" key="Vcs.Push.Dialog.v2/0.25.1680.1025@0.25.1680.1025" timestamp="1631768195936" />
+   </component>
+ </project>
+\ No newline at end of file
