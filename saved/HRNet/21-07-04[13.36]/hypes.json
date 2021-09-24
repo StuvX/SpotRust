@@ -1,0 +1,149 @@
+{
+    "arch": {
+        "ALIGN_CORNERS": false,
+        "EXTRA": {
+            "FINAL_CONV_KERNEL": 1,
+            "STAGE1": {
+                "BLOCK": "BOTTLENECK",
+                "FUSE_METHOD": "SUM",
+                "NUM_BLOCKS": [
+                    4
+                ],
+                "NUM_BRANCHES": 1,
+                "NUM_CHANNELS": [
+                    64
+                ],
+                "NUM_MODULES": 1
+            },
+            "STAGE2": {
+                "BLOCK": "BASIC",
+                "FUSE_METHOD": "SUM",
+                "NUM_BLOCKS": [
+                    4,
+                    4
+                ],
+                "NUM_BRANCHES": 2,
+                "NUM_CHANNELS": [
+                    48,
+                    96
+                ],
+                "NUM_MODULES": 1
+            },
+            "STAGE3": {
+                "BLOCK": "BASIC",
+                "FUSE_METHOD": "SUM",
+                "NUM_BLOCKS": [
+                    4,
+                    4,
+                    4
+                ],
+                "NUM_BRANCHES": 3,
+                "NUM_CHANNELS": [
+                    48,
+                    96,
+                    192
+                ],
+                "NUM_MODULES": 4
+            },
+            "STAGE4": {
+                "BLOCK": "BASIC",
+                "FUSE_METHOD": "SUM",
+                "NUM_BLOCKS": [
+                    4,
+                    4,
+                    4,
+                    4
+                ],
+                "NUM_BRANCHES": 4,
+                "NUM_CHANNELS": [
+                    48,
+                    96,
+                    192,
+                    384
+                ],
+                "NUM_MODULES": 3
+            }
+        },
+        "bayes": false,
+        "config": "HRNet",
+        "image_shape": [
+            3,
+            480,
+            640
+        ],
+        "num_classes": 1
+    },
+    "data": {
+        "background_colour": [
+            255,
+            0,
+            0
+        ],
+        "class_colours": [
+            [
+                255,
+                0,
+                0
+            ],
+            [
+                255,
+                0,
+                255
+            ]
+        ],
+        "class_labels": [
+            "background",
+            "corrosion"
+        ],
+        "class_weights": [
+            1.0,
+            7.035
+        ],
+        "overlay_colours": [
+            [
+                0,
+                255,
+                0,
+                0
+            ],
+            [
+                255,
+                0,
+                255,
+                200
+            ]
+        ],
+        "pop_mean": [
+            0.5992951989173889,
+            0.5457777380943298,
+            0.5338858962059021
+        ],
+        "pop_std0": [
+            0.19231098890304565,
+            0.20724713802337646,
+            0.22158382833003998
+        ],
+        "test_file": "testset.txt",
+        "train_file": "train.txt",
+        "val_file": "val.txt"
+    },
+    "model": "saved/HRNet/21-07-04[13.36]/297_2021-07-04_13.36.08.best.state",
+    "solver": {
+        "adam_eps": 0.0001,
+        "batch_size": 1,
+        "channels": 3,
+        "epsilon": 1e-09,
+        "learning_rate": 0.0003,
+        "learning_rate_step": null,
+        "loss": "xentropy",
+        "max_steps": 500,
+        "n_MC": 1,
+        "num_workers": 4,
+        "opt": "Adam",
+        "sched_factor": 0.9,
+        "sched_patience": 2,
+        "sched_thresh": 0.0001,
+        "var_loss_epoch": 100,
+        "var_loss_multiplier": 0.1
+    }
+}
