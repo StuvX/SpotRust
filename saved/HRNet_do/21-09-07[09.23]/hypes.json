@@ -142,7 +142,7 @@
         "loss": "xentropy",
         "max_steps": 1500,
         "num_workers": 4,
-        "opt": "RMSProp",
+        "opt": "Adam",
         "sched_factor": 0.9,
         "sched_patience": 2,
         "sched_thresh": 0.0001,
