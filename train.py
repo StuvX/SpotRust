@@ -16,6 +16,10 @@ from torch.utils.data import DataLoader
 import torchvision.transforms.functional as TF
 import torch.distributed as dist
 
+from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.multiprocessing as mp
+from sklearn.model_selection import KFold
+
 from HRNet import HRNet, HRNet_dropout, HRNet_var
 
 from utils import tsv_DataLoader, find_normals, threshold_tensor, varDiceLoss, bce_loss_var, gtImages, is_image_file, \
@@ -48,6 +52,16 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     level=logging.INFO,
                     stream=sys.stdout)
 
+def setup(rank, world_size):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '29501'
+
+    # initialize the process group
+    dist.init_process_group("gloo", rank=rank, world_size=world_size)
+#
+def cleanup():
+    dist.destroy_process_group()
+
 class SegmentationTraining:
     def __init__(self):
         parser = argparse.ArgumentParser(description="Segmentation training file")
@@ -75,42 +89,42 @@ class SegmentationTraining:
             'RMSProp': torch.optim.RMSprop
         }
 
-        self.use_cuda = torch.cuda.is_available()
-        if self.use_cuda:
-            log.info("Using CUDA; {} devices.".format(torch.cuda.device_count()))
-            self.device = torch.device('cuda:{}'.format(self.args.local_rank))
-            torch.cuda.set_device(self.device)
-            torch.distributed.init_process_group(
-                backend="nccl", init_method="env://",)
-        else:
-            self.device = torch.device("cpu")
-
-        self.segmentation_model = self.initModel()
-        self.segmentation_model = self.segmentation_model.to(self.device)
-        if self.use_cuda:
-            self.segmentation_model = torch.nn.parallel.DistributedDataParallel(
-                self.segmentation_model,
-                find_unused_parameters=False,
-                device_ids=[self.args.local_rank],
-                output_device=self.args.local_rank
-            )
-        self.optimizer, self.scheduler = self.initOptimizer()
-        self.normalize = self.initNormalise()
-        self.mask_transforms, self.train_transforms, self.val_transforms = self.initTransforms()
-        weight = torch.tensor(self.hypes['data']['class_weights'][1])
-        if self.use_cuda:
-            weight = weight.to(self.device)
-
-        if self.hypes['solver']['loss'] == 'xentropy':
-            self.criterion = bce_loss_var(weight=weight)
-        elif self.hypes['solver']['loss'] == 'dice':
-            self.criterion = varDiceLoss()
-        elif self.hypes['solver']['loss'] == 'combo':
-            self.criterion = comboLossVar(lossWeight=0.15, classWeight=weight)
-        else:
-            self.criterion = mse_loss_var()
-
-        self.save_dir = os.path.join("saved", self.hypes['arch']['config'], time.strftime('%y-%m-%d[%H.%M]', time.localtime(time.time())))
+        # self.use_cuda = torch.cuda.is_available()
+        # if self.use_cuda:
+        #     log.info("Using CUDA; {} devices.".format(torch.cuda.device_count()))
+        #     self.device = torch.device('cuda:{}'.format(self.args.local_rank))
+        #     torch.cuda.set_device(self.device)
+        #     torch.distributed.init_process_group(
+        #         backend="nccl", init_method="env://",)
+        # else:
+        #     self.device = torch.device("cpu")
+        #
+        # self.segmentation_model = self.initModel()
+        # self.segmentation_model = self.segmentation_model.to(self.device)
+        # if self.use_cuda:
+        #     self.segmentation_model = torch.nn.parallel.DistributedDataParallel(
+        #         self.segmentation_model,
+        #         find_unused_parameters=False,
+        #         device_ids=[self.args.local_rank],
+        #         output_device=self.args.local_rank
+        #     )
+        # self.optimizer, self.scheduler = self.initOptimizer()
+        # self.normalize = self.initNormalise()
+        # self.mask_transforms, self.train_transforms, self.val_transforms = self.initTransforms()
+        # weight = torch.tensor(self.hypes['data']['class_weights'][1])
+        # if self.use_cuda:
+        #     weight = weight.to(self.device)
+        #
+        # if self.hypes['solver']['loss'] == 'xentropy':
+        #     self.criterion = bce_loss_var(weight=weight)
+        # elif self.hypes['solver']['loss'] == 'dice':
+        #     self.criterion = varDiceLoss()
+        # elif self.hypes['solver']['loss'] == 'combo':
+        #     self.criterion = comboLossVar(lossWeight=0.15, classWeight=weight)
+        # else:
+        #     self.criterion = mse_loss_var()
+        #
+        # self.save_dir = os.path.join("saved", self.hypes['arch']['config'], time.strftime('%y-%m-%d[%H.%M]', time.localtime(time.time())))
 
     def initModel(self):
         # arch vars from hypes
@@ -127,7 +141,7 @@ class SegmentationTraining:
             segmentation_model = HRNet_dropout(config=self.hypes)
             print(self.args.pretrained)
             segmentation_model.init_weights(pretrained=self.args.pretrained)
-        elif self.hypes['arch']['config'] == 'HRNet_bayes_all':
+        elif self.hypes['arch']['config'] == 'HRNet_var':
             segmentation_model = HRNet_var(config=self.hypes)
             print(self.args.pretrained)
             segmentation_model.init_weights(pretrained=self.args.pretrained)
@@ -176,6 +190,15 @@ class SegmentationTraining:
              [transforms.Resize(input_res, interpolation=TF.InterpolationMode.NEAREST)])
 
         return mask_transforms, train_transforms, val_transforms
+
+    def initKFoldDL(self):
+        kFoldDS = tsv_DataLoader(self.hypes,
+                                  self.hypes['data']['train_file'], normalize=self.normalize,
+                                  img_transform=self.train_transforms,
+                                  mask_transform=self.mask_transforms
+                                  )
+
+        return kFoldDS
 
     def initTrainDl(self):
         train_ds = tsv_DataLoader(self.hypes,
@@ -245,45 +268,108 @@ class SegmentationTraining:
             self.trn_writer = SummaryWriter(log_dir=log_dir + '_trn_seg_' + self.hypes['arch']['config'] + str(self.args.local_rank))
             self.val_writer = SummaryWriter(log_dir=log_dir + '_val_seg_' + self.hypes['arch']['config'] + str(self.args.local_rank))
 
-    def main(self):
+    def main(self, rank, world_size):
         log.info("Starting {}, {}".format(type(self).__name__, self.hypes))
 
-        train_dl = self.initTrainDl()
-        val_dl = self.initValDl()
+        self.rank = rank
+        self.device = torch.device(rank)
+        self.use_cuda = True
 
-        best_score = 0.0
-        self.validation_cadence = self.hypes['logging']['eval_iter']
-        for epoch_ndx in range(1, self.hypes['solver']['max_steps'] + 1):
-            log.info("Epoch {} of {}, {}/{} batches of size {}*{}".format(
-                epoch_ndx,
-                self.hypes['solver']['max_steps'],
-                len(train_dl),
-                len(val_dl),
-                self.hypes['solver']['batch_size'],
-                (torch.cuda.device_count() if self.use_cuda else 1),
-            ))
+        self.normalize = self.initNormalise()
+        self.mask_transforms, self.train_transforms, self.val_transforms = self.initTransforms()
 
-            trnMetrics_t = self.doTraining(epoch_ndx, train_dl)
-            self.logMetrics(epoch_ndx, 'trn', trnMetrics_t)
+        # train_dl = self.initTrainDl() #currently set up to use k-fold cross validation
+        # val_dl = self.initValDl()
+        self.dataset = self.initKFoldDL()
 
-            if epoch_ndx == 1 or epoch_ndx % self.validation_cadence == 0:
-                # if validation is wanted
-                valMetrics_t = self.doValidation(epoch_ndx, val_dl)
-                score = self.logMetrics(epoch_ndx, 'val', valMetrics_t)
-                best_score = max(score, best_score)
-                log.info("Best score is: ".format(best_score))
-                self.saveModel('seg', epoch_ndx, score, score == best_score)
+        weight = torch.tensor(self.hypes['data']['class_weights'][1])
+        if self.use_cuda:
+            weight = weight.to(self.device)
 
-                self.logImages(epoch_ndx, 'trn', train_dl)
-                self.logImages(epoch_ndx, 'val', val_dl)
+        if self.hypes['solver']['loss'] == 'xentropy':
+            self.criterion = bce_loss_var(weight=weight)
+        elif self.hypes['solver']['loss'] == 'dice':
+            self.criterion = varDiceLoss()
+        elif self.hypes['solver']['loss'] == 'combo':
+            self.criterion = comboLossVar(lossWeight=0.15, classWeight=weight)
+        else:
+            self.criterion = mse_loss_var()
 
+        self.save_dir = os.path.join("saved", self.hypes['arch']['config'],
+                                     time.strftime('%y-%m-%d[%H.%M]', time.localtime(time.time())))
 
-        if self.hypes['data']['test_file'] is not None:
-            test_dl = self.initTestDl()
-            self.finalTest(test_dl)
+        batch_size = self.hypes['solver']['batch_size']
+        if self.use_cuda:
+            batch_size *= torch.cuda.device_count()
 
-        self.trn_writer.close()
-        self.val_writer.close()
+        # Define the K-fold Cross Validator
+        kfold = KFold(n_splits=self.k_folds, shuffle=True)
+
+        for fold, (train_ids, test_ids) in enumerate(kfold.split(self.dataset)):
+            print(f'FOLD {fold}')
+            # Sample elements randomly from a given list of ids, no replacement.
+            train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
+            test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
+            # Define data loaders for training and testing data in this fold
+            trainloader = torch.utils.data.DataLoader(
+                self.dataset,
+                batch_size=batch_size, sampler=train_subsampler)
+            testloader = torch.utils.data.DataLoader(
+                self.dataset,
+                batch_size=batch_size, sampler=test_subsampler)
+
+            model = self.initModel().to(self.device)
+            self.segmentation_model = DDP(model, device_ids=[self.rank])
+
+            self.optimizer, self.scheduler = self.initOptimizer()
+
+            best_score = 0.0
+
+            self.validation_cadence = self.hypes['logging']['eval_iter']
+            for epoch_ndx in range(1, self.hypes['solver']['max_steps'] + 1):
+                log.info("Epoch {} of {}, {}/{} batches of size {}*{}".format(
+                    epoch_ndx,
+                    self.hypes['solver']['max_steps'],
+                    len(trainloader),
+                    len(testloader),
+                    self.hypes['solver']['batch_size'],
+                    (torch.cuda.device_count() if self.use_cuda else 1),
+                ))
+
+                trnMetrics_t = self.doTraining(epoch_ndx, trainloader)
+                self.logMetrics(epoch_ndx, 'train', trnMetrics_t)
+
+                if epoch_ndx == 1 or epoch_ndx % self.validation_cadence == 0:
+                    # if validation is wanted
+                    valMetrics_t = self.doValidation(epoch_ndx, testloader)
+                    score = self.logMetrics(epoch_ndx, 'test', valMetrics_t)
+                    best_score = max(score, best_score)
+                    log.info("Best score is: {}".format(best_score))
+                    self.saveModel('seg', epoch_ndx, score, fold, score == best_score)
+
+                    self.logImages(epoch_ndx, 'train', trainloader, fold)
+                    self.logImages(epoch_ndx, 'test', testloader, fold)
+
+            valMetrics_t = self.doValidation(epoch_ndx, testloader)
+            score = self.logMetrics(epoch_ndx, 'test', valMetrics_t)
+            best_score = max(score, best_score)
+            log.info("Best score is: ".format(best_score))
+
+            self.results[fold] = score
+
+            self.saveModel('seg', fold, score, fold, score == best_score)
+
+            self.logImages(epoch_ndx, 'train', trainloader, fold)
+            self.logImages(epoch_ndx, 'test', testloader, fold)
+
+            if self.hypes['data']['test_file'] is not None:
+                # if self.args.local_rank == 0:
+                test_dl = self.initTestDl()
+                self.finalTest(test_dl)
+
+            self.train_writer.close()
+            self.train_writer.close()
+
 
     def doTraining(self, epoch_ndx, train_dl):
         trnMetrics_g = torch.zeros(METRICS_SIZE, len(train_dl.dataset), device=self.device)
@@ -351,21 +437,12 @@ class SegmentationTraining:
                 out = []
                 var = []
                 for j in range(self.hypes['solver']['n_MC']):
-                    if self.hypes['arch']['bayes'] is True:
-                        if self.hypes['arch']['recon'] is True:
-                            prediction, logVar, kl, recon = self.segmentation_model(input)
-                        else:
-                            prediction, logVar, kl = self.segmentation_model(input)
-                    else:
-                        if self.hypes['arch']['recon'] is True:
-                            prediction, logVar, recon = self.segmentation_model(input)
-                        else:
-                            prediction, logVar = self.segmentation_model(input)
-                    out.append(prediction.squeeze().detach())
-                    var.append(logVar.squeeze().detach())
+                    outDict = self.segmentation_model(input)
+                    out.append(outDict['out'].squeeze().detach())
+                    var.append(outDict['logVar'].squeeze().detach())
+
                 outs = torch.stack(out)
                 vars = torch.stack(var)
-
 
                 filenm = os.path.splitext(os.path.basename(filename[0]))[0]
                 recordName = os.path.join(self.save_dir, 'test_imgs', str(self.hypes['arch']['config'] + '_' + filenm))
@@ -402,12 +479,11 @@ class SegmentationTraining:
         else:
             varOn = True
 
+        outDict = self.segmentation_model(input_g)
         if self.hypes['arch']['bayes'] is True:
-            prediction_g, logVar, kl = self.segmentation_model(input_g)
-            loss = self.criterion(prediction_g, label_g, logVar, varOn) + 0.1 * kl
+            loss = self.criterion(outDict['out'], label_g, outDict['logVar'], varOn) + 0.1 * outDict['kl']
         else:
-            prediction_g, logVar = self.segmentation_model(input_g)
-            loss = self.criterion(prediction_g, label_g, logVar, varOn)
+            loss = self.criterion(outDict['out'], label_g, outDict['logVar'], varOn)
 
         if torch.isnan(loss):
             print('loss has nan from input ', index)
@@ -415,15 +491,25 @@ class SegmentationTraining:
         start_ndx = batch_ndx * batch_size
         end_ndx = start_ndx + input_t.size(0)
         with torch.no_grad():
-            if batch_ndx == 1:
-                print('prediction max {}, min {}'.format(prediction_g.max(), prediction_g.min()))
+            if not self.segmentation_model.training:
+                out = [outDict['out']]
+                outVar = [outDict['logVar']]
+                for j in range(self.hypes['solver']['n_MC']-1):
+                    outDict = self.segmentation_model(input_g)
+                    out.append(outDict['out'].detach())
+                    outVar.append(outDict['logVar'].detach())
+                prediction_g = torch.stack(out).mean(dim=0)
+                logVar = torch.stack(outVar).mean(dim=0)
+            else:
+                prediction_g = outDict['out']
+                logVar = outDict['logVar']
 
-            prediction_g = normalize_tensor(prediction_g)
-            predictionBool_g = threshold_tensor(prediction_g, classificationThreshold).to(torch.int)
+            prediction = normalize_tensor(prediction_g)
+            predictionBool_g = threshold_tensor(prediction, classificationThreshold).to(torch.int)
 
             tp = (predictionBool_g * label_g).sum(dim=[1, 2, 3])
             fn = ((1 - predictionBool_g) * label_g).sum(dim=[1, 2, 3])
-            fp = (predictionBool_g * (1-label_g)).sum(dim=[1, 2, 3])
+            fp = (predictionBool_g * (1 - label_g)).sum(dim=[1, 2, 3])
 
             if fp.min() < 0:
                 print('*** fp < 0, index is {:.3f} ***'.format(index))
@@ -439,7 +525,7 @@ class SegmentationTraining:
         self.segmentation_model.eval()
         with torch.no_grad():
             tsv_path = os.path.abspath(os.path.dirname(self.hypes['data']['train_file']))
-            loglist = [1, 4, 8, 12, 16, 20]
+            loglist = [-1, -4, -8, -12, -16, -20]
             for i in range(6):
                 file, gt = dl.dataset.imgs[loglist[i]]
                 filename = os.path.join(tsv_path, file)
@@ -621,7 +707,17 @@ class SegmentationTraining:
         with open(file_path, 'rb') as f:
             log.info("SHA1: " + hashlib.sha1(f.read()).hexdigest())
 
+def segCall(rank, world_size):
+    print(f"Running DDP training on rank {rank}.")
+    setup(rank, world_size)
+    SegmentationTraining().main(rank, world_size)
+
+    cleanup()
 
 if __name__ == '__main__':
     print('torch version ', torch.__version__)
-    SegmentationTraining().main()
+    world_size = torch.cuda.device_count()
+    assert world_size >= 2, f"Requires at least 2 GPUs to run, but got {world_size}"
+    mp.spawn(segCall, args=(world_size,),
+             nprocs=world_size,
+             join=True)

@@ -621,7 +621,7 @@ class HRNet(nn.Module):
 
         out = F.interpolate(input=out, size=(h, w), mode='bilinear', align_corners=ALIGN_CORNERS)
 
-        return out, var_out
+        return {'out': out, 'logVar': var_out}
 
     def init_weights(self, pretrained='', ):
         logger.info('=> init weights from normal distribution')
@@ -644,69 +644,6 @@ class HRNet(nn.Module):
                     '=> loading {} pretrained model {}'.format(k, pretrained))
             model_dict.update(pretrained_dict)
             self.load_state_dict(model_dict)
-
-def get_seg_model(cfg, **kwargs):
-    model = HRNet(cfg, **kwargs)
-    model.init_weights(cfg.MODEL.PRETRAINED)
-
-    return model
-
-class BayesConv2d(nn.modules.conv._ConvNd):
-    def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        kernel_size: _size_2_t,
-        stride: _size_2_t = 1,
-        padding: _size_2_t = 0,
-        dilation: _size_2_t = 1,
-        groups: int = 1,
-        bias: bool = True,
-        padding_mode: str = 'zeros',  # TODO: refine this type
-        q_logvar_init = 0.05,
-        p_logvar_init = math.log(0.05)
-    ):
-        kernel_size = _pair(kernel_size)
-        stride = _pair(stride)
-        padding = _pair(padding)
-        dilation = _pair(dilation)
-        super(BayesConv2d, self).__init__(
-            in_channels, out_channels, kernel_size, stride, padding, dilation,
-            False, _pair(0), groups, bias, padding_mode)
-        self.sigma = Parameter(torch.empty(
-                out_channels, in_channels // groups, *kernel_size))
-        self.q_logvar_init = q_logvar_init
-        self.p_logvar_init = p_logvar_init
-        self.kernel_size = kernel_size[0]
-        self.in_channels = in_channels
-
-    def _conv_forward(self, input, weight):
-        if self.padding_mode != 'zeros':
-            return F.conv2d(F.pad(input, self._reversed_padding_repeated_twice, mode=self.padding_mode),
-                            weight, self.bias, self.stride,
-                            _pair(0), self.dilation, self.groups)
-        return F.conv2d(input, weight, self.bias, self.stride,
-                        self.padding, self.dilation, self.groups)
-
-    def forward(self, input: torch.Tensor) -> tuple:
-        sigma_weight = torch.exp(self.sigma)
-        bayes_weights = Normal(self.weight, sigma_weight).sample()
-        kl_ = math.log(self.p_logvar_init) - self.sigma_weight + (sigma_weight ** 2 + self.weight ** 2) / \
-              (2 * self.p_logvar_init ** 2) - 0.5
-        kl = kl_.sum()
-        return self._conv_forward(input, bayes_weights), kl
-
-    def _reset_parameters(self):
-        n = self.in_channels
-        n *= self.kernel_size ** 2
-        stdv = 1.0 / math.sqrt(n)
-        torch.nn.init.uniform_(self.weight, -stdv, stdv)
-        torch.nn.init.uniform_(self.sigma, -stdv, stdv)
-        self.sigma.add(self.q_logvar_init)
-
-        fan_in, _ = torch.nn.init._calculate_fan_in_and_fan_out(self.weight)
-        bound = 1 / math.sqrt(fan_in)
-        torch.nn.init.uniform_(self.bias, -bound, bound)
 
 def calculate_kl(mu_q, sig_q, mu_p, sig_p):
     kl = 0.5 * (2 * torch.log(sig_p / sig_q) - 1 + (sig_q / sig_p).pow(2) + ((mu_p - mu_q) / sig_p).pow(2)).mean()
@@ -1090,7 +1027,7 @@ class HRNet_dropout(nn.Module):
 
         out = F.interpolate(input=out, size=(h, w), mode='bicubic', align_corners=ALIGN_CORNERS)
 
-        return out, var_out
+        return {'out': out, 'logVar': var_out}
 
     def init_weights(self, pretrained='', ):
         logger.info('=> init weights from normal distribution')
@@ -1370,7 +1307,7 @@ class HRNet_var(nn.Module):
 
         out = F.interpolate(input=out, size=(h, w), mode='bicubic', align_corners=ALIGN_CORNERS)
 
-        return out, var_out, kl0+kl1+kl2+kl3
+        return {'out': out, 'logVar': var_out, 'kl': kl0+kl1+kl2+kl3}
 
     def init_weights(self, pretrained='', ):
         logger.info('=> init weights from normal distribution')
