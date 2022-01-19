@@ -32,14 +32,27 @@ if __name__ == '__main__':
     parser.add_argument('--var_threshold', type=float, default=1., help='Optional variation threshold (between 0 and 1), default 1')
     parser.add_argument('--out_res', nargs='+', type=int, default=None, help='Optional output resolution')
     parser.add_argument('--thresh', type=float, default=None, help='Optional threshold')
+
     args = parser.parse_args()
 
     threshold = args.var_threshold
 
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if dist.is_available():
         setup(0, 1)
 
     models = args.models
+
+    #TODO pass the model savefiles as args
+    modelos = ['fold0_epoch110.pt',
+               'fold1_epoch90.pt',
+               'fold2_epoch90.pt',
+               'fold3_epoch110.pt',
+               'fold4_epoch90.pt',
+               'fold5_epoch90.pt',
+               'fold6_epoch90.pt',
+               'fold7_epoch90.pt',
+               'fold8_epoch90.pt', ]
 
     print('image file is ', args.image)
     if is_image_file(args.image):
@@ -47,7 +60,9 @@ if __name__ == '__main__':
     else:
         RuntimeError('image provided is not a supported image format')
 
+    detector = []
     out = []
+    seg = []
     var = []
 
     for model in models:
@@ -55,10 +70,7 @@ if __name__ == '__main__':
         with open(hypesfile, 'r') as f:
             hypes = json.load(f)
 
-        modelfile = hypes['model']
-
         image_shape = hypes['arch']['image_shape']
-
         num_classes = hypes['arch']['num_classes']
         class_colors = hypes['data']['class_colours']
         class_labels = hypes['data']['class_labels']
@@ -91,32 +103,35 @@ if __name__ == '__main__':
         image = input_transforms(image_orig)
         image = image.unsqueeze(dim=0).to(device)
 
-        seg_model = HRNet(config=hypes)
-        pretrained_dict = torch.load(modelfile, map_location=device)
-        if 'state_dict' in pretrained_dict:
-            pretrained_dict = pretrained_dict['state_dict']
+        for modelo in modelos:
+            modelfile = os.path.join(model, modelo)
+            seg_model = HRNet(config=hypes)
 
-        prefix = "module."
-        keys = sorted(pretrained_dict.keys())
-        for key in keys:
-            if key.startswith(prefix):
-                newkey = key[len(prefix):]
-                pretrained_dict[newkey] = pretrained_dict.pop(key)
-        # also strip the prefix in metadata if any.
-        if "_metadata" in pretrained_dict:
-            metadata = pretrained_dict["_metadata"]
-            for key in list(metadata.keys()):
-                if len(key) == 0:
-                    continue
-                newkey = key[len(prefix):]
-                metadata[newkey] = metadata.pop(key)
-        seg_model.load_state_dict(pretrained_dict)
-        seg_model.to(device)
+            pretrained_dict = torch.load(modelfile, map_location=device)
+            if 'state_dict' in pretrained_dict:
+                pretrained_dict = pretrained_dict['state_dict']
 
-        with torch.no_grad():
-            out_temp, logVar = seg_model(image)
-            out.append(out_temp.squeeze().detach())
-            var.append(logVar.squeeze().detach())
+            prefix = "module."
+            keys = sorted(pretrained_dict.keys())
+            for key in keys:
+                if key.startswith(prefix):
+                    newkey = key[len(prefix):]
+                    pretrained_dict[newkey] = pretrained_dict.pop(key)
+            # also strip the prefix in metadata if any.
+            if "_metadata" in pretrained_dict:
+                metadata = pretrained_dict["_metadata"]
+                for key in list(metadata.keys()):
+                    if len(key) == 0:
+                        continue
+                    newkey = key[len(prefix):]
+                    metadata[newkey] = metadata.pop(key)
+            seg_model.load_state_dict(pretrained_dict)
+            seg_model.to(device)
+
+            with torch.no_grad():
+                outDict = seg_model(image)
+                out.append(outDict['out'].squeeze().detach())
+                var.append(outDict['logVar'].squeeze().detach())
 
     out = torch.stack(out)
     var = torch.stack(var)
@@ -124,9 +139,11 @@ if __name__ == '__main__':
     varmin = var.min()
     out = normalize_tensor(out)
     var = normalize_tensor(var) * (varmax - varmin)
+
     savename = os.path.join(os.getcwd(), 'figures',
                             str(hypes['arch']['config']), str(args.thresh),
                             str('multimodel_' + os.path.splitext(os.path.basename(args.image))[0]))
 
     os.makedirs(os.path.dirname(savename), mode=0o755, exist_ok=True)
-    fscore = process_images(hypes, savename, image_orig, out, var, args.gt, input_res, threshold=args.thresh)
+    fscore = process_images(hypes, savename, image_orig, out, var, args.gt, input_res, threshold=args.thresh,
+                            printout=True)
