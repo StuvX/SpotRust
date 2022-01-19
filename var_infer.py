@@ -13,8 +13,6 @@ if sys_pf == 'darwin':
 from utils import is_image_file, pil_loader, process_images, normalize_tensor
 from HRNet import HRNet_dropout, HRNet_var
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '29501'
@@ -23,19 +21,22 @@ def setup(rank, world_size):
 
 
 if __name__ == '__main__':
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if dist.is_available():
+        setup(0, 1)
+
     parser = argparse.ArgumentParser(description="Inference on images for Capsule Segmentation (SegCaps)")
     parser.add_argument('--model', type=str, help='Path to directory with model file and hypes.json [required]')
     parser.add_argument('--image', type=str, help='Path to image to run inference on [required]')
     parser.add_argument('--gt', type=str, help='Optional path to ground truth file, will return confusion matrix.')
     parser.add_argument('--target', type=int, default=1, help='Optional target class, default to 0.')
     parser.add_argument('--n_MC', type=int, default=16, help='Optional number of times to run the image, default 16.')
-    parser.add_argument('--var_threshold', type=float, default=1., help='Optional variation threshold (between 0 and 1), default 1')
     parser.add_argument('--out_res', nargs='+', type=int, default=None, help='Optional output resolution')
     parser.add_argument('--thresh', type=float, default=None, help='Optional threshold')
     parser.add_argument('--factor', type=float, default=None, help='Optional factor')
     args = parser.parse_args()
 
-    threshold = args.var_threshold
     hypesfile = os.path.join(args.model, 'hypes.json')
 
     with open(hypesfile,'r') as f:
@@ -83,7 +84,7 @@ if __name__ == '__main__':
     if hypes['arch']['config'] == 'HRNet_do':
         seg_model = HRNet_dropout(config=hypes).to(device)
         bayesMethod = 'dropout'
-    elif hypes['arch']['config'] == 'HRNet_bayes_all':
+    elif hypes['arch']['config'] == 'HRNet_var':
         seg_model = HRNet_var(config=hypes)
         bayesMethod = 'variational'
 
@@ -117,23 +118,15 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         seg_model.train(False)
+
         out = []
         var = []
         for j in range(args.n_MC):
-            if hypes['arch']['bayes'] is True:
-                if hypes['arch']['recon'] is True:
-                    prediction, logVar, kl, recon = seg_model(image)
-                else:
-                    prediction, logVar, kl = seg_model(image)
-            else:
-                if hypes['arch']['recon'] is True:
-                    prediction, logVar, recon = seg_model(image)
-                else:
-                    prediction, logVar = seg_model(image)
-
-            print(' '+'>' * j + 'X' + '<' * (args.n_MC - j - 1), end="\r", flush=True)
-            out.append(prediction.squeeze().detach())
-            var.append(logVar.squeeze().detach())
+            with torch.no_grad():
+                outDict = seg_model(image)
+                out.append(outDict['out'].squeeze().detach())
+                var.append(outDict['logVar'].squeeze().detach())
+            print(' ' + '>' * j + 'X' + '<' * (args.n_MC - j - 1), end="\r", flush=True)
 
         out = torch.stack(out)
 
@@ -148,4 +141,5 @@ if __name__ == '__main__':
                                 str(bayesMethod + '_' + os.path.splitext(os.path.basename(args.image))[0]))
 
         os.makedirs(os.path.dirname(savename), mode=0o755, exist_ok=True)
-        fscore = process_images(hypes, savename, image_orig, out, var, args.gt, input_res, threshold=args.thresh, printout=True)
+        fscore = process_images(hypes, savename, image_orig, out, var, args.gt, input_res,
+                                threshold=args.thresh, printout=True)
