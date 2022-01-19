@@ -29,13 +29,10 @@ if __name__ == '__main__':
     parser.add_argument('--image', type=str, help='Path to an image to run inference on')
     parser.add_argument('--gt', type=str, help='Optional path to ground truth file, will return confusion matrix.')
     parser.add_argument('--target', type=int, default=1, help='Optional target class, default to 1')
-    parser.add_argument('--var_threshold', type=float, default=1., help='Optional variation threshold (between 0 and 1), default 1')
     parser.add_argument('--out_res', nargs='+', type=int, default=None, help='Optional output resolution')
     parser.add_argument('--thresh', type=float, default=None, help='Optional threshold')
 
     args = parser.parse_args()
-
-    threshold = args.var_threshold
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if dist.is_available():
