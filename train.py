@@ -356,7 +356,7 @@ class SegmentationTraining:
                     score = self.logMetrics(epoch_ndx, 'test', valMetrics_t)
                     best_score = max(score, best_score)
                     log.info("Best score is: {}".format(best_score))
-                    self.saveModel('seg', epoch_ndx, score, fold, score == best_score)
+                    self.saveModel('seg', epoch_ndx, score, score == best_score)
 
                     self.logImages(epoch_ndx, 'train', trainloader, fold)
                     self.logImages(epoch_ndx, 'test', testloader, fold)
@@ -368,7 +368,7 @@ class SegmentationTraining:
 
             self.results[fold] = score
 
-            self.saveModel('seg', fold, score, fold, score == best_score)
+            self.saveModel('seg', fold, score, score == best_score)
 
             self.logImages(epoch_ndx, 'train', trainloader, fold)
             self.logImages(epoch_ndx, 'test', testloader, fold)
