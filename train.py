@@ -80,6 +80,8 @@ class SegmentationTraining:
             logging.info("f: %s", f)
             self.hypes = json.load(f)
 
+        self.hypes.setdefault('logging', {}).setdefault('eval_iter', 1)
+
         self.k_folds = self.hypes.get('solver', {}).get('k_folds', 5)
         self.results = {}
 
