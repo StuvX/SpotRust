@@ -426,7 +426,14 @@ class SegmentationTraining:
                 if batch_tup[1].max() == 0:
                     blanks += 1
                     continue
-                val_loss += self.computeBatchLoss(batch_ndx, batch_tup, val_dl.batch_size, valMetrics_g, epoch_ndx)
+                val_loss += self.computeBatchLoss(
+                    batch_ndx,
+                    batch_tup,
+                    val_dl.batch_size,
+                    valMetrics_g,
+                    epoch_ndx,
+                    self.hypes['solver']['threshold'],
+                )
             val_loss = val_loss / val_dl.batch_size
             self.scheduler.step(val_loss)
         return valMetrics_g.to('cpu')
