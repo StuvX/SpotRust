@@ -717,7 +717,7 @@ def segCall(rank, world_size):
 if __name__ == '__main__':
     print('torch version ', torch.__version__)
     world_size = torch.cuda.device_count()
-    assert world_size >= 2, f"Requires at least 2 GPUs to run, but got {world_size}"
+    # assert world_size >= 2, f"Requires at least 2 GPUs to run, but got {world_size}"
     mp.spawn(segCall, args=(world_size,),
              nprocs=world_size,
              join=True)
