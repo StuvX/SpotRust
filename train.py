@@ -80,6 +80,9 @@ class SegmentationTraining:
             logging.info("f: %s", f)
             self.hypes = json.load(f)
 
+        self.k_folds = self.hypes.get('solver', {}).get('k_folds', 5)
+        self.results = {}
+
         self.normalize = self.initNormalise()
 
         self.optDict = {
@@ -322,7 +325,10 @@ class SegmentationTraining:
                 batch_size=batch_size, sampler=test_subsampler)
 
             model = self.initModel().to(self.device)
-            self.segmentation_model = DDP(model, device_ids=[self.rank])
+            if world_size < 2:
+                self.segmentation_model = model
+            else:
+                self.segmentation_model = DDP(model, device_ids=[self.rank])
 
             self.optimizer, self.scheduler = self.initOptimizer()
 
