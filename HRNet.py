@@ -633,7 +633,7 @@ class HRNet(nn.Module):
                 nn.init.constant_(m.bias, 0)
             elif isinstance(m, Aleatoric_net):
                 m.init_weights()
-        if os.path.isfile(pretrained):
+        if pretrained and os.path.isfile(pretrained):
             pretrained_dict = torch.load(pretrained)
             logger.info('=> loading pretrained model {}'.format(pretrained))
             model_dict = self.state_dict()
@@ -1041,7 +1041,7 @@ class HRNet_dropout(nn.Module):
             elif isinstance(m, BatchNorm2d_class):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
-        if pretrained is not None:
+        if pretrained and os.path.isfile(pretrained):
             pretrained_dict = torch.load(pretrained)
             logger.info('=> loading pretrained model {}'.format(pretrained))
             model_dict = self.state_dict()
@@ -1321,7 +1321,7 @@ class HRNet_var(nn.Module):
                 m.init_weights()
             elif isinstance(m, BBBConv2d):
                 m.reset_parameters()
-        if os.path.isfile(pretrained):
+        if pretrained and os.path.isfile(pretrained):
             pretrained_dict = torch.load(pretrained)
             logger.info('=> loading pretrained model {}'.format(pretrained))
             model_dict = self.state_dict()
