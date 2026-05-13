@@ -358,8 +358,8 @@ class SegmentationTraining:
                     log.info("Best score is: {}".format(best_score))
                     self.saveModel('seg', epoch_ndx, score, score == best_score)
 
-                    self.logImages(epoch_ndx, 'train', trainloader, fold)
-                    self.logImages(epoch_ndx, 'test', testloader, fold)
+                    self.logImages(epoch_ndx, 'train', trainloader)
+                    self.logImages(epoch_ndx, 'test', testloader)
 
             valMetrics_t = self.doValidation(epoch_ndx, testloader)
             score = self.logMetrics(epoch_ndx, 'test', valMetrics_t)
@@ -370,8 +370,8 @@ class SegmentationTraining:
 
             self.saveModel('seg', fold, score, score == best_score)
 
-            self.logImages(epoch_ndx, 'train', trainloader, fold)
-            self.logImages(epoch_ndx, 'test', testloader, fold)
+            self.logImages(epoch_ndx, 'train', trainloader)
+            self.logImages(epoch_ndx, 'test', testloader)
 
             if self.hypes['data']['test_file'] is not None:
                 # if self.args.local_rank == 0:
