@@ -272,8 +272,11 @@ class SegmentationTraining:
         log.info("Starting {}, {}".format(type(self).__name__, self.hypes))
 
         self.rank = rank
-        self.device = torch.device(rank)
-        self.use_cuda = True
+        if world_size <2:
+            self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = torch.device(rank)
+        self.use_cuda = torch.cuda.is_available()
 
         self.normalize = self.initNormalise()
         self.mask_transforms, self.train_transforms, self.val_transforms = self.initTransforms()
