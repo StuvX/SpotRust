@@ -492,7 +492,12 @@ class SegmentationTraining:
 
         outDict = self.segmentation_model(input_g)
         if self.hypes['arch']['bayes'] is True:
-            loss = self.criterion(outDict['out'], label_g, outDict['logVar'], varOn) + 0.1 * outDict['kl']
+            kl_term = 0.0
+            if isinstance(outDict, dict):
+                kl_term = outDict.get('kl', 0.0)
+            if not torch.is_tensor(kl_term):
+                kl_term = torch.tensor(kl_term, device=outDict['out'].device)
+            loss = self.criterion(outDict['out'], label_g, outDict['logVar'], varOn) + 0.1 * kl_term
         else:
             loss = self.criterion(outDict['out'], label_g, outDict['logVar'], varOn)
 
@@ -564,16 +569,15 @@ class SegmentationTraining:
                 image = image.to(self.device, non_blocking=True).unsqueeze(0)
                 mask = mask.to(image.device, non_blocking=True).unsqueeze(0)
 
-                if self.hypes['arch']['bayes'] is True:
-                    if self.hypes['arch']['recon'] is True:
-                        prediction_g, logVar, kl, recon = self.segmentation_model(image)
-                    else:
-                        prediction_g, logVar, kl = self.segmentation_model(image)
+                out_dict = self.segmentation_model(image)
+                if isinstance(out_dict, dict):
+                    prediction_g = out_dict['out']
+                    logVar = out_dict['logVar']
                 else:
                     if self.hypes['arch']['recon'] is True:
-                        prediction_g, logVar, recon = self.segmentation_model(image)
+                        prediction_g, logVar, _recon = out_dict
                     else:
-                        prediction_g, logVar = self.segmentation_model(image)
+                        prediction_g, logVar = out_dict
 
                 prediction_g = normalize_tensor(prediction_g.detach()).squeeze()
                 output_tensor = torch.zeros_like(prediction_g)
