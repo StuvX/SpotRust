@@ -540,6 +540,11 @@ class SegmentationTraining:
     def logImages(self, epoch_ndx, mode_str, dl):
         self.segmentation_model.eval()
         with torch.no_grad():
+            writer_key = mode_str
+            if mode_str == 'train':
+                writer_key = 'trn'
+            elif mode_str == 'test':
+                writer_key = 'val'
             tsv_path = os.path.abspath(os.path.dirname(self.hypes['data']['train_file']))
             loglist = [-1, -4, -8, -12, -16, -20]
             for i in range(6):
@@ -583,9 +588,9 @@ class SegmentationTraining:
                 output_tensor = torch.zeros_like(prediction_g)
                 output_tensor[prediction_g > 0.7] = int(1)
 
-                writer = getattr(self, mode_str + '_writer')
+                writer = getattr(self, writer_key + '_writer')
 
-                gtImages(output_tensor, i, index=epoch_ndx, gt=mask, writer=getattr(self, mode_str + '_writer'))
+                gtImages(output_tensor, i, index=epoch_ndx, gt=mask, writer=getattr(self, writer_key + '_writer'))
 
                 outName = str('{}_var'.format(i))
                 logVar = logVar.squeeze()
@@ -602,6 +607,12 @@ class SegmentationTraining:
             epoch_ndx,
             type(self).__name__,
         ))
+
+        writer_key = mode_str
+        if mode_str == 'train':
+            writer_key = 'trn'
+        elif mode_str == 'test':
+            writer_key = 'val'
 
         metrics_a = metrics_t.detach().numpy()
         sum_a = metrics_a.sum(axis=1)
@@ -651,7 +662,7 @@ class SegmentationTraining:
         ))
 
         self.initTensorboardWriters()
-        writer = getattr(self, mode_str + '_writer')
+        writer = getattr(self, writer_key + '_writer')
 
         prefix_str = 'seg_'
 
