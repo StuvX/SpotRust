@@ -537,7 +537,7 @@ class SegmentationTraining:
             prediction_g = outDict['out']
             logVar = outDict['logVar']
 
-            prediction = normalize_tensor(prediction_g)
+            prediction = torch.sigmoid(prediction_g)
             predictionBool_g = threshold_tensor(prediction, classificationThreshold).to(torch.int)
 
             tp = (predictionBool_g * label_g).sum(dim=[1, 2, 3])
