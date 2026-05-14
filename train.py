@@ -190,19 +190,23 @@ class SegmentationTraining:
         )
 
         train_transforms = transforms.Compose([
-            transforms.Resize(input_res, interpolation=TF.InterpolationMode.NEAREST)]
-        )
+            transforms.Resize(input_res, interpolation=TF.InterpolationMode.NEAREST),
+            transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, hue=0.05),
+            transforms.RandomGrayscale(p=0.1),
+            transforms.RandomApply([transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))], p=0.3),
+        ])
 
         val_transforms = transforms.Compose(
              [transforms.Resize(input_res, interpolation=TF.InterpolationMode.NEAREST)])
 
         return mask_transforms, train_transforms, val_transforms
 
-    def initKFoldDL(self):
+    def initKFoldDL(self, augment=False):
         kFoldDS = tsv_DataLoader(self.hypes,
                                   self.hypes['data']['train_file'], normalize=self.normalize,
-                                  img_transform=self.train_transforms,
-                                  mask_transform=self.mask_transforms
+                                  img_transform=self.train_transforms if augment else self.val_transforms,
+                                  mask_transform=self.mask_transforms,
+                                  random_flip=augment,
                                   )
 
         return kFoldDS
@@ -290,7 +294,8 @@ class SegmentationTraining:
 
         # train_dl = self.initTrainDl() #currently set up to use k-fold cross validation
         # val_dl = self.initValDl()
-        self.dataset = self.initKFoldDL()
+        self.train_dataset = self.initKFoldDL(augment=True)
+        self.test_dataset = self.initKFoldDL(augment=False)
 
         weight = torch.tensor(self.hypes['data']['class_weights'][1])
         if self.use_cuda:
@@ -315,17 +320,17 @@ class SegmentationTraining:
         # Define the K-fold Cross Validator
         kfold = KFold(n_splits=self.k_folds, shuffle=True)
 
-        for fold, (train_ids, test_ids) in enumerate(kfold.split(self.dataset)):
+        for fold, (train_ids, test_ids) in enumerate(kfold.split(self.train_dataset)):
             print(f'FOLD {fold}')
             # Sample elements randomly from a given list of ids, no replacement.
             train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
             test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
             # Define data loaders for training and testing data in this fold
             trainloader = torch.utils.data.DataLoader(
-                self.dataset,
+                self.train_dataset,
                 batch_size=batch_size, sampler=train_subsampler)
             testloader = torch.utils.data.DataLoader(
-                self.dataset,
+                self.test_dataset,
                 batch_size=batch_size, sampler=test_subsampler)
 
             model = self.initModel().to(self.device)
@@ -638,7 +643,7 @@ class SegmentationTraining:
         metrics_dict['percent_all/fn'] = \
             sum_a[METRICS_FN_NDX] / (allLabel_count or 1) * 100
         metrics_dict['percent_all/fp'] = \
-            sum_a[METRICS_FP_NDX] / (allLabel_count or 1) * 100
+            sum_a[METRICS_FP_NDX] / ((sum_a[METRICS_TP_NDX] + sum_a[METRICS_FP_NDX]) or 1) * 100
 
         precision = metrics_dict['pr/precision'] = sum_a[METRICS_TP_NDX] \
                                                    / ((sum_a[METRICS_TP_NDX] + sum_a[METRICS_FP_NDX]) or 1)

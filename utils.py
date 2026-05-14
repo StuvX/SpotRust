@@ -69,7 +69,7 @@ class tsv_DataLoader(torch.utils.data.Dataset):
     """
 
     def __init__(self, hypes, tsv_file, img_transform=None, mask_transform=None, normalize=None, return_path=False,
-                 random_crop=False):
+                 random_crop=False, random_flip=False):
         """
         Args:
             tsv_file (string): Path to csv file with relative image paths and labels.
@@ -90,6 +90,7 @@ class tsv_DataLoader(torch.utils.data.Dataset):
         self.random_crop = random_crop
         if random_crop:
             self.random_crop = torchvision.transforms.RandomResizedCrop(size=self.img_size, scale=(0.5, 1.2), ratio=(3. / 4., 4. / 3.))
+        self.random_flip = random_flip
 
     def __len__(self):
         return len(self.series_list)
@@ -112,6 +113,13 @@ class tsv_DataLoader(torch.utils.data.Dataset):
                         mask = TF.resize(mask, self.img_size, Image.NEAREST)
                         if idx == 1:
                             print('random_crop failed, resized')
+                if self.random_flip:
+                    if torch.rand(1).item() > 0.5:
+                        image = TF.hflip(image)
+                        mask = TF.hflip(mask)
+                    if torch.rand(1).item() > 0.5:
+                        image = TF.vflip(image)
+                        mask = TF.vflip(mask)
                 if self.mask_transform is not None:
                     mask = self.mask_transform(mask)
                 if self.img_transform is not None:
