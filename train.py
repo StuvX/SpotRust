@@ -392,7 +392,7 @@ class SegmentationTraining:
     def doTraining(self, epoch_ndx, train_dl):
         trnMetrics_g = torch.zeros(METRICS_SIZE, len(train_dl.dataset), device=self.device)
         self.segmentation_model.train(True)
-        train_dl.dataset.shuffleSamples()
+        # train_dl.dataset.shuffleSamples()
 
         batch_iter = enumerateWithEstimate(
             train_dl,
@@ -520,19 +520,22 @@ class SegmentationTraining:
 
         start_ndx = batch_ndx * batch_size
         end_ndx = start_ndx + input_t.size(0)
+        # with torch.no_grad():
+        #     if not self.segmentation_model.training:
+        #         out = [outDict['out']]
+        #         outVar = [outDict['logVar']]
+        #         for j in range(self.hypes['solver']['n_MC']-1):
+        #             outDict = self.segmentation_model(input_g)
+        #             out.append(outDict['out'].detach())
+        #             outVar.append(outDict['logVar'].detach())
+        #         prediction_g = torch.stack(out).mean(dim=0)
+        #         logVar = torch.stack(outVar).mean(dim=0)
+        #     else:
+        #         prediction_g = outDict['out']
+        #         logVar = outDict['logVar']
         with torch.no_grad():
-            if not self.segmentation_model.training:
-                out = [outDict['out']]
-                outVar = [outDict['logVar']]
-                for j in range(self.hypes['solver']['n_MC']-1):
-                    outDict = self.segmentation_model(input_g)
-                    out.append(outDict['out'].detach())
-                    outVar.append(outDict['logVar'].detach())
-                prediction_g = torch.stack(out).mean(dim=0)
-                logVar = torch.stack(outVar).mean(dim=0)
-            else:
-                prediction_g = outDict['out']
-                logVar = outDict['logVar']
+            prediction_g = outDict['out']
+            logVar = outDict['logVar']
 
             prediction = normalize_tensor(prediction_g)
             predictionBool_g = threshold_tensor(prediction, classificationThreshold).to(torch.int)
