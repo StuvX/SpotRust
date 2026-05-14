@@ -221,15 +221,13 @@ class SegmentationTraining:
         if self.use_cuda:
             batch_size *= torch.cuda.device_count()
 
-        train_dl = DataLoader(
-            train_ds,
-            batch_size=batch_size,
-            num_workers=self.hypes['solver']['num_workers'],
-            pin_memory=self.use_cuda,
-            drop_last=True,
-            shuffle=True,
-        )
-        return train_dl
+        num_workers = self.hypes['solver']['num_workers']
+        trainloader = torch.utils.data.DataLoader(
+            self.train_dataset,
+            batch_size=batch_size, sampler=train_subsampler,
+            num_workers=num_workers, pin_memory=self.use_cuda,
+            persistent_workers=(num_workers > 0))
+        return trainloader
 
     def initValDl(self):
         val_ds = tsv_DataLoader(self.hypes,
@@ -240,14 +238,12 @@ class SegmentationTraining:
         if self.use_cuda:
             batch_size *= torch.cuda.device_count()
 
+        num_workers = self.hypes['solver']['num_workers']
         val_dl = DataLoader(
             val_ds,
-            batch_size=batch_size,
-            num_workers=self.hypes['solver']['num_workers'],
-            pin_memory=self.use_cuda,
-            drop_last=True,
-            shuffle=True,
-        )
+            batch_size=batch_size, sampler=test_subsampler,
+            num_workers=num_workers, pin_memory=self.use_cuda,
+            persistent_workers=(num_workers > 0))
 
         return val_dl
 
@@ -319,7 +315,7 @@ class SegmentationTraining:
 
         # Define the K-fold Cross Validator
         kfold = KFold(n_splits=self.k_folds, shuffle=True)
-
+        num_workers = self.hypes['solver']['num_workers']
         for fold, (train_ids, test_ids) in enumerate(kfold.split(self.train_dataset)):
             print(f'FOLD {fold}')
             # Sample elements randomly from a given list of ids, no replacement.
@@ -328,10 +324,14 @@ class SegmentationTraining:
             # Define data loaders for training and testing data in this fold
             trainloader = torch.utils.data.DataLoader(
                 self.train_dataset,
-                batch_size=batch_size, sampler=train_subsampler)
+                batch_size=batch_size, sampler=train_subsampler,
+                num_workers=num_workers, pin_memory=self.use_cuda,
+                persistent_workers=(num_workers > 0))
             testloader = torch.utils.data.DataLoader(
                 self.test_dataset,
-                batch_size=batch_size, sampler=test_subsampler)
+                batch_size=batch_size, sampler=test_subsampler,
+                num_workers=num_workers, pin_memory=self.use_cuda,
+                persistent_workers=(num_workers > 0))
 
             model = self.initModel().to(self.device)
             if world_size < 2:
