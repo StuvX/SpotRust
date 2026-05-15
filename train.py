@@ -291,7 +291,7 @@ class SegmentationTraining:
             self.val_writer = SummaryWriter(log_dir=log_dir + '_val_seg_' + self.hypes['arch']['config'] + str(self.args.local_rank))
 
     def main(self, rank, world_size):
-        log.info("Starting {}, {}".format(type(self).__name__, json.dumps(self.hypes, indent=4))
+        log.info("Starting {}, {}".format(type(self).__name__, json.dumps(self.hypes, indent=4)))
 
         self.rank = rank
         if world_size <2:
@@ -518,10 +518,8 @@ class SegmentationTraining:
         input_g = input_t.to(self.device, non_blocking=True).requires_grad_(True)
         label_g = label_t.to(input_g.device, non_blocking=True)
 
-        if epoch_ndx < self.hypes['solver']['var_loss_epoch']:
-            varOn = False
-        else:
-            varOn = True
+        use_var = self.hypes['solver'].get('use_var_loss', False)
+        varOn = use_var and epoch_ndx >= self.hypes['solver']['var_loss_epoch']
 
         outDict = self.segmentation_model(input_g)
         if self.hypes['arch']['bayes'] is True:

@@ -511,7 +511,8 @@ class varDiceLoss(_Loss):
         if varOn is False:
             return (1 - fscore.mean())+0*logVar.mean()
         else:
-            varLoss = 0.5*(torch.exp(-logVar)*(1-fscore) + logVar)
+            logVar_c = logVar.clamp(min=-10, max=10)
+            varLoss = 0.5*(torch.exp(-logVar_c)*(1-fscore) + logVar_c)
             return torch.abs(varLoss.mean())
 
 class diceLoss(_Loss):
@@ -550,7 +551,8 @@ class bce_loss_var(_Loss):
         if varOn is False:
             return bce_loss.mean()+0*logVar.mean()
         else:
-            bce_var_loss = 0.5*(torch.exp(-logVar)*bce_loss+logVar)
+            logVar_c = logVar.clamp(min=-10, max=10)
+            bce_var_loss = 0.5*(torch.exp(-logVar_c)*bce_loss+logVar_c)
             return torch.abs(bce_var_loss.mean())
 
 class mse_loss_var(_Loss):
@@ -568,7 +570,8 @@ class mse_loss_var(_Loss):
         if varOn is False:
             return mse_loss.mean()+0*logVar.mean()
         else:
-            mse_var_loss = 0.5*(torch.exp(-logVar)*mse_loss+logVar)
+            logVar_c = logVar.clamp(min=-10, max=10)
+            mse_var_loss = 0.5*(torch.exp(-logVar_c)*mse_loss+logVar_c)
             return torch.abs(mse_var_loss.mean())
 
 class comboLossVar(_Loss):
@@ -586,7 +589,8 @@ class comboLossVar(_Loss):
         if varOn is False:
             return comboLoss.mean()+0*logVar.mean()
         else:
-            comboLossVar = 0.5*(torch.exp(-1*logVar)*comboLoss+logVar)
+            logVar_c = logVar.clamp(min=-10, max=10)
+            comboLossVar = 0.5*(torch.exp(-1*logVar_c)*comboLoss+logVar_c)
             return torch.abs(comboLossVar.mean())
 
 def plot_to_tensorboard(writer, fig, name, step):
