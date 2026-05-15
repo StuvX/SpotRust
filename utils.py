@@ -89,7 +89,9 @@ class tsv_DataLoader(torch.utils.data.Dataset):
         self.return_path = return_path
         self.random_crop = random_crop
         if random_crop:
-            self.random_crop = torchvision.transforms.RandomResizedCrop(size=self.img_size, scale=(0.5, 1.2), ratio=(3. / 4., 4. / 3.))
+            crop_size = hypes['arch'].get('crop_size', self.img_size)
+            self.random_crop = torchvision.transforms.RandomResizedCrop(
+                size=crop_size, scale=(0.5, 1.0), ratio=(3. / 4., 4. / 3.))
         self.random_flip = random_flip
 
     def __len__(self):
@@ -103,14 +105,16 @@ class tsv_DataLoader(torch.utils.data.Dataset):
             if is_image_file(maskname):
                 mask = pil_loader(maskname)
                 if self.random_crop:
+                    _crop_size = list(self.random_crop.size)
                     try:
                         i, j, h, w = self.random_crop.get_params(image, [*self.random_crop.scale], [*self.random_crop.ratio])
-                        image = TF.resized_crop(image, i, j, h, w, self.img_size,
+                        image = TF.resized_crop(image, i, j, h, w, _crop_size,
                                                 interpolation=TF.InterpolationMode.BILINEAR)
-                        mask = TF.resized_crop(mask, i, j, h, w, self.img_size, interpolation=TF.InterpolationMode.NEAREST)
+                        mask = TF.resized_crop(mask, i, j, h, w, _crop_size,
+                                               interpolation=TF.InterpolationMode.NEAREST)
                     except:
-                        image = TF.resize(image, self.img_size, Image.BILINEAR)
-                        mask = TF.resize(mask, self.img_size, Image.NEAREST)
+                        image = TF.resize(image, _crop_size, interpolation=TF.InterpolationMode.BILINEAR)
+                        mask = TF.resize(mask, _crop_size, interpolation=TF.InterpolationMode.NEAREST)
                         if idx == 1:
                             print('random_crop failed, resized')
                 if self.random_flip:

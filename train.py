@@ -5,6 +5,8 @@ This file is used for training models. Please see the README for details about t
 import sys
 import os
 import torch
+from torch.amp.autocast_mode import autocast
+from torch.amp.grad_scaler import GradScaler
 from torchvision import transforms
 import json
 import argparse
@@ -184,9 +186,14 @@ class SegmentationTraining:
         #NOTE that the transform shouldn't use ToTensor, it is embedded within the tsv_DataLoader
         image_shape = self.hypes['arch']['image_shape']
         input_res = image_shape[1:3]
+        crop_size = self.hypes['arch'].get('crop_size', input_res)
 
         mask_transforms = transforms.Compose([
             transforms.Resize(input_res, interpolation=TF.InterpolationMode.NEAREST)]
+        )
+
+        crop_mask_transforms = transforms.Compose([
+            transforms.Resize(crop_size, interpolation=TF.InterpolationMode.NEAREST)]
         )
 
         train_transforms = transforms.Compose([
@@ -196,17 +203,25 @@ class SegmentationTraining:
             transforms.RandomApply([transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))], p=0.3),
         ])
 
+        crop_train_transforms = transforms.Compose([
+            transforms.Resize(crop_size, interpolation=TF.InterpolationMode.NEAREST),
+            transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, hue=0.05),
+            transforms.RandomGrayscale(p=0.1),
+            transforms.RandomApply([transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0))], p=0.3),
+        ])
+
         val_transforms = transforms.Compose(
              [transforms.Resize(input_res, interpolation=TF.InterpolationMode.NEAREST)])
 
-        return mask_transforms, train_transforms, val_transforms
+        return mask_transforms, crop_mask_transforms, train_transforms, crop_train_transforms, val_transforms
 
     def initKFoldDL(self, augment=False):
         kFoldDS = tsv_DataLoader(self.hypes,
                                   self.hypes['data']['train_file'], normalize=self.normalize,
-                                  img_transform=self.train_transforms if augment else self.val_transforms,
-                                  mask_transform=self.mask_transforms,
+                                  img_transform=self.crop_train_transforms if augment else self.val_transforms,
+                                  mask_transform=self.crop_mask_transforms if augment else self.mask_transforms,
                                   random_flip=augment,
+                                  random_crop=augment,
                                   )
 
         return kFoldDS
@@ -286,7 +301,9 @@ class SegmentationTraining:
         self.use_cuda = torch.cuda.is_available()
 
         self.normalize = self.initNormalise()
-        self.mask_transforms, self.train_transforms, self.val_transforms = self.initTransforms()
+        self.mask_transforms, self.crop_mask_transforms, \
+            self.train_transforms, self.crop_train_transforms, \
+            self.val_transforms = self.initTransforms()
 
         # train_dl = self.initTrainDl() #currently set up to use k-fold cross validation
         # val_dl = self.initValDl()
@@ -340,6 +357,7 @@ class SegmentationTraining:
                 self.segmentation_model = DDP(model, device_ids=[self.rank])
 
             self.optimizer, self.scheduler = self.initOptimizer()
+            self.scaler = GradScaler(enabled=self.use_cuda)
 
             best_score = 0.0
 
@@ -404,12 +422,13 @@ class SegmentationTraining:
         for batch_ndx, batch_tup in batch_iter:
             self.optimizer.zero_grad(set_to_none=True)
 
-            loss_var = self.computeBatchLoss(batch_ndx, batch_tup, train_dl.batch_size, trnMetrics_g, epoch_ndx,
-                                             self.hypes['solver']['threshold'])
+            with autocast(device_type='cuda', enabled=self.use_cuda):
+                loss_var = self.computeBatchLoss(batch_ndx, batch_tup, train_dl.batch_size, trnMetrics_g, epoch_ndx,
+                                                 self.hypes['solver']['threshold'])
 
-            loss_var.backward()
-
-            self.optimizer.step()
+            self.scaler.scale(loss_var).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
 
         self.totalTrainingSamples_count += trnMetrics_g.size(1)
 

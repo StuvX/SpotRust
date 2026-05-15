@@ -11,12 +11,13 @@
     "overlay_colours" : [[0,255,0,0],[255,0,255,200]]
   },
 
-  "arch" : {
+    "arch" : {
     "config" : "HRNet_do",
     "bayes" : true,
     "recon" : false,
     "num_classes" : 1,
     "image_shape" : [3,480,640],
+    "crop_size" : [480, 480],
     "ALIGN_CORNERS" : false,
     "EXTRA" : {
       "FINAL_CONV_KERNEL" : 1,
@@ -58,7 +59,7 @@
   "solver" : {
     "loss" : "xentropy",
     "opt" : "Adam",
-    "batch_size" : 1,
+    "batch_size" : 4,
     "epsilon" : 0.000000001,
     "adam_eps" : 0.0001,
     "learning_rate" : 0.0003,
