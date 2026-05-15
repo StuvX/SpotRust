@@ -291,7 +291,7 @@ class SegmentationTraining:
             self.val_writer = SummaryWriter(log_dir=log_dir + '_val_seg_' + self.hypes['arch']['config'] + str(self.args.local_rank))
 
     def main(self, rank, world_size):
-        log.info("Starting {}, {}".format(type(self).__name__, self.hypes))
+        log.info("Starting {}, {}".format(type(self).__name__, json.dumps(self.hypes, indent=4))
 
         self.rank = rank
         if world_size <2:
