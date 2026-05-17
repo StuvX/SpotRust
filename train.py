@@ -323,8 +323,9 @@ class SegmentationTraining:
         else:
             self.criterion = mse_loss_var()
 
-        self.save_dir = os.path.join("saved", self.hypes['arch']['config'],
-                                     time.strftime('%y-%m-%d[%H.%M]', time.localtime(time.time())))
+        self.save_dir = os.path.join(
+            self.hypes['data']['save_dir'], self.hypes['arch']['config'],
+            time.strftime('%y-%m-%d[%H.%M]', time.localtime(time.time())))
 
         batch_size = self.hypes['solver']['batch_size']
         if self.use_cuda:
@@ -360,6 +361,7 @@ class SegmentationTraining:
             self.scaler = GradScaler(enabled=self.use_cuda)
 
             best_score = 0.0
+            self.best_path = None
 
             self.validation_cadence = self.hypes['logging']['eval_iter']
             for epoch_ndx in range(1, self.hypes['solver']['max_steps'] + 1):
@@ -711,28 +713,27 @@ class SegmentationTraining:
 
     def saveModel(self, type_str, epoch_ndx, score, isBest=False):
         print(f"Saving model on rank {self.args.local_rank}")
-        file_path = os.path.join(
-            self.save_dir,
-            '{}_{}.{}.pt'.format(
-                epoch_ndx,
-                self.time_str,
-                epoch_ndx,
-            )
-        )
+        # Always write to a fixed 'latest.pt' to avoid accumulating per-epoch files
+        file_path = os.path.join(self.save_dir, 'latest.pt')
 
         os.makedirs(os.path.dirname(file_path), mode=0o755, exist_ok=True)
 
         if isinstance(self.segmentation_model, torch.nn.DataParallel) or isinstance(self.segmentation_model, torch.nn.parallel.DistributedDataParallel):
 
             if self.args.local_rank == 0:
-                log.info('=> saving checkpoint to {}'.format(
-                    file_path))
-                torch.save({
-                    'epoch': epoch_ndx + 1,
-                    'score': score,
-                    'state_dict': self.segmentation_model.state_dict(),
-                    'optimizer': self.optimizer.state_dict(),
-                }, file_path)
+                log.info('=> saving checkpoint to {}'.format(file_path))
+                try:
+                    torch.save({
+                        'epoch': epoch_ndx + 1,
+                        'score': score,
+                        'state_dict': self.segmentation_model.state_dict(),
+                        'optimizer': self.optimizer.state_dict(),
+                    }, file_path)
+                except (RuntimeError, OSError) as e:
+                    log.warning('=> checkpoint save failed ({}), skipping: {}'.format(file_path, e))
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                    return
 
             dist.barrier()
 
@@ -740,14 +741,19 @@ class SegmentationTraining:
             self.segmentation_model.load_state_dict(torch.load(file_path, map_location=map_location)['state_dict'])
 
         else:
-            log.info('=> saving checkpoint to {}'.format(
-                file_path + 'checkpoint.pth.tar'))
-            torch.save({
-                'epoch': epoch_ndx + 1,
-                'score': score,
-                'state_dict': self.segmentation_model.state_dict(),
-                'optimizer': self.optimizer.state_dict(),
-            }, file_path)
+            log.info('=> saving checkpoint to {}'.format(file_path))
+            try:
+                torch.save({
+                    'epoch': epoch_ndx + 1,
+                    'score': score,
+                    'state_dict': self.segmentation_model.state_dict(),
+                    'optimizer': self.optimizer.state_dict(),
+                }, file_path)
+            except (RuntimeError, OSError) as e:
+                log.warning('=> checkpoint save failed ({}), skipping: {}'.format(file_path, e))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                return
         hypesout = os.path.join(self.save_dir, 'hypes.json')
 
         with open(hypesout, 'w+') as outfile:
@@ -756,9 +762,17 @@ class SegmentationTraining:
         log.info("Saved model params to {}".format(file_path))
 
         if isBest:
-            self.best_path = os.path.join(
+            new_best_path = os.path.join(
                 self.save_dir,
                 f'{epoch_ndx}_{self.time_str}.best.state')
+            # Delete previous best checkpoint to avoid accumulating files
+            if self.best_path is not None and os.path.exists(self.best_path):
+                try:
+                    os.remove(self.best_path)
+                    log.info('Deleted old best checkpoint: {}'.format(self.best_path))
+                except OSError as e:
+                    log.warning('Could not delete old best checkpoint: {}'.format(e))
+            self.best_path = new_best_path
             shutil.copyfile(file_path, self.best_path)
 
             log.info("Saved model params to {}".format(self.best_path))
