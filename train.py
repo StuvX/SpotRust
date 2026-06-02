@@ -323,7 +323,7 @@ class SegmentationTraining:
         else:
             self.criterion = mse_loss_var()
 
-        self.save_dir = os.path.join("saved", self.hypes['arch']['config'],
+        self.save_dir = os.path.join(self.hypes['data']['save_dir'], self.hypes['arch']['config'],
                                      time.strftime('%y-%m-%d[%H.%M]', time.localtime(time.time())))
 
         batch_size = self.hypes['solver']['batch_size']
