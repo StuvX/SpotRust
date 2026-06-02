@@ -49,7 +49,8 @@ class BasicBlock(nn.Module):
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = BatchNorm2d(planes, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=relu_inplace)
+        # self.relu = nn.ReLU(inplace=relu_inplace)
+        self.relu = nn.GELU()
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = BatchNorm2d(planes, momentum=BN_MOMENTUM)
         self.downsample = downsample
@@ -87,7 +88,8 @@ class Bottleneck(nn.Module):
                                bias=False)
         self.bn3 = BatchNorm2d(planes * self.expansion,
                                momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=relu_inplace)
+        # self.relu = nn.ReLU(inplace=relu_inplace)
+        self.relu = nn.GELU()
         self.downsample = downsample
         self.stride = stride
 
@@ -129,7 +131,8 @@ class HighResolutionModule(nn.Module):
         self.branches = self._make_branches(
             num_branches, blocks, num_blocks, num_channels)
         self.fuse_layers = self._make_fuse_layers()
-        self.relu = nn.ReLU(inplace=relu_inplace)
+        # self.relu = nn.ReLU(inplace=relu_inplace)
+        self.relu = nn.GELU()
 
     def _check_branches(self, num_branches, blocks, num_blocks,
                         num_inchannels, num_channels):
@@ -224,7 +227,8 @@ class HighResolutionModule(nn.Module):
                                           3, 2, 1, bias=False),
                                 BatchNorm2d(num_outchannels_conv3x3,
                                             momentum=BN_MOMENTUM),
-                                nn.ReLU(inplace=relu_inplace)))
+                                # nn.ReLU(inplace=relu_inplace)))
+                                nn.GELU()))
                     fuse_layer.append(nn.Sequential(*conv3x3s))
             fuse_layers.append(nn.ModuleList(fuse_layer))
 
@@ -275,7 +279,8 @@ class HighResolutionModuleBayes(nn.Module):
         self.branches = self._make_branches(
             num_branches, blocks, num_blocks, num_channels)
         self.fuse_layers = self._make_fuse_layers()
-        self.relu = nn.ReLU(inplace=relu_inplace)
+        # self.relu = nn.ReLU(inplace=relu_inplace)
+        self.relu = nn.GELU()
 
     def _check_branches(self, num_branches, blocks, num_blocks,
                         num_inchannels, num_channels):
@@ -370,7 +375,8 @@ class HighResolutionModuleBayes(nn.Module):
                                           3, 2, 1, bias=False, returnKL=False),
                                 BatchNorm2d(num_outchannels_conv3x3,
                                             momentum=BN_MOMENTUM),
-                                nn.ReLU(inplace=relu_inplace)))
+                                # nn.ReLU(inplace=relu_inplace)))
+                                nn.GELU()))
                     fuse_layer.append(nn.Sequential(*conv3x3s))
             fuse_layers.append(nn.ModuleList(fuse_layer))
 
@@ -426,7 +432,8 @@ class HRNet(nn.Module):
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1,
                                bias=False)
         self.bn2 = BatchNorm2d(64, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=relu_inplace)
+        # self.relu = nn.ReLU(inplace=relu_inplace)
+        self.relu = nn.GELU()
 
         self.stage1_cfg = extra['STAGE1']
         num_channels = self.stage1_cfg['NUM_CHANNELS'][0]
@@ -475,7 +482,8 @@ class HRNet(nn.Module):
                 stride=1,
                 padding=0),
             BatchNorm2d(last_inp_channels, momentum=BN_MOMENTUM),
-            nn.ReLU(inplace=relu_inplace),
+            # nn.ReLU(inplace=relu_inplace),
+            nn.GELU(),
             nn.Conv2d(
                 in_channels=last_inp_channels,
                 out_channels=config["arch"]["num_classes"],
@@ -504,7 +512,8 @@ class HRNet(nn.Module):
                                   bias=False),
                         BatchNorm2d(
                             num_channels_cur_layer[i], momentum=BN_MOMENTUM),
-                        nn.ReLU(inplace=relu_inplace)))
+                        # nn.ReLU(inplace=relu_inplace)))
+                        nn.GELU()))
                 else:
                     transition_layers.append(None)
             else:
@@ -517,7 +526,8 @@ class HRNet(nn.Module):
                         nn.Conv2d(
                             inchannels, outchannels, 3, 2, 1, bias=False),
                         BatchNorm2d(outchannels, momentum=BN_MOMENTUM),
-                        nn.ReLU(inplace=relu_inplace)))
+                        # nn.ReLU(inplace=relu_inplace)))
+                        nn.GELU()))
                 transition_layers.append(nn.Sequential(*conv3x3s))
 
         return nn.ModuleList(transition_layers)
@@ -768,7 +778,8 @@ class Aleatoric_net(nn.Module):
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1,
                                bias=False)
         self.bn2 = BatchNorm2d(64, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=relu_inplace)
+        # self.relu = nn.ReLU(inplace=relu_inplace)
+        self.relu = nn.GELU()
 
         self.var_layer = nn.Sequential(
             nn.Conv2d(
@@ -778,7 +789,8 @@ class Aleatoric_net(nn.Module):
                 stride=1,
                 padding=0),
             BatchNorm2d(64, momentum=BN_MOMENTUM),
-            nn.ReLU(inplace=relu_inplace),
+            # nn.ReLU(inplace=relu_inplace),
+            nn.GELU(),
             nn.Conv2d(
                 in_channels=64,
                 out_channels=1,
@@ -827,7 +839,8 @@ class HRNet_dropout(nn.Module):
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1,
                                bias=False)
         self.bn2 = BatchNorm2d(64, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=relu_inplace)
+        # self.relu = nn.ReLU(inplace=relu_inplace)
+        self.relu=nn.GELU()
 
         self.stage1_cfg = extra['STAGE1']
         num_channels = self.stage1_cfg['NUM_CHANNELS'][0]
@@ -876,7 +889,8 @@ class HRNet_dropout(nn.Module):
                 stride=1,
                 padding=0),
             BatchNorm2d(last_inp_channels, momentum=BN_MOMENTUM),
-            nn.ReLU(inplace=relu_inplace),
+            # nn.ReLU(inplace=relu_inplace),
+            nn.GELU(),
             nn.Conv2d(
                 in_channels=last_inp_channels,
                 out_channels=config["arch"]["num_classes"],
@@ -905,7 +919,8 @@ class HRNet_dropout(nn.Module):
                                   bias=False),
                         BatchNorm2d(
                             num_channels_cur_layer[i], momentum=BN_MOMENTUM),
-                        nn.ReLU(inplace=relu_inplace)))
+                        # nn.ReLU(inplace=relu_inplace)))
+                        nn.GELU()))
                 else:
                     transition_layers.append(None)
             else:
@@ -918,7 +933,8 @@ class HRNet_dropout(nn.Module):
                         nn.Conv2d(
                             inchannels, outchannels, 3, 2, 1, bias=False),
                         BatchNorm2d(outchannels, momentum=BN_MOMENTUM),
-                        nn.ReLU(inplace=relu_inplace)))
+                        # nn.ReLU(inplace=relu_inplace)))
+                        nn.GELU()))
                 transition_layers.append(nn.Sequential(*conv3x3s))
 
         return nn.ModuleList(transition_layers)
@@ -1068,7 +1084,8 @@ class HRNet_var(nn.Module):
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1,
                                bias=False)
         self.bn2 = BatchNorm2d(64, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=relu_inplace)
+        # self.relu = nn.ReLU(inplace=relu_inplace)
+        self.relu = nn.GELU()
 
         self.stage1_cfg = extra['STAGE1']
         num_channels = self.stage1_cfg['NUM_CHANNELS'][0]
@@ -1145,7 +1162,8 @@ class HRNet_var(nn.Module):
                 stride=1,
                 padding=0),
             BatchNorm2d(last_inp_channels, momentum=BN_MOMENTUM),
-            nn.ReLU(inplace=relu_inplace),
+            # nn.ReLU(inplace=relu_inplace),
+            nn.GELU(),
             nn.Conv2d(
                 in_channels=last_inp_channels,
                 out_channels=config["arch"]["num_classes"],
@@ -1174,7 +1192,8 @@ class HRNet_var(nn.Module):
                                   bias=False),
                         BatchNorm2d(
                             num_channels_cur_layer[i], momentum=BN_MOMENTUM),
-                        nn.ReLU(inplace=relu_inplace)))
+                        # nn.ReLU(inplace=relu_inplace)))
+                        nn.GELU()))
                 else:
                     transition_layers.append(None)
             else:
@@ -1187,7 +1206,8 @@ class HRNet_var(nn.Module):
                         nn.Conv2d(
                             inchannels, outchannels, 3, 2, 1, bias=False),
                         BatchNorm2d(outchannels, momentum=BN_MOMENTUM),
-                        nn.ReLU(inplace=relu_inplace)))
+                        # nn.ReLU(inplace=relu_inplace)))
+                        nn.GELU()))
                 transition_layers.append(nn.Sequential(*conv3x3s))
 
         return nn.ModuleList(transition_layers)
