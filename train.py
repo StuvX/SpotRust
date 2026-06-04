@@ -157,7 +157,8 @@ class SegmentationTraining:
 
     def initOptimizer(self):
         model_optimizer = self.optDict[self.hypes['solver']['opt']](self.segmentation_model.parameters(),
-                                                                    lr=self.hypes['solver']['learning_rate'])
+                                                                    lr=self.hypes['solver']['learning_rate'],
+                                                                    eps=self.hypes['solver']['adam_eps'])
         model_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             model_optimizer,
             patience=self.hypes['solver']['sched_patience'],
