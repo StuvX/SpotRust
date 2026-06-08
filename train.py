@@ -430,7 +430,7 @@ class SegmentationTraining:
             self.scaler.scale(loss_var).backward()
             # adding gradient clipping
             self.scaler.unscale_(self.optimizer)
-            torch.nn.utils.clip_grad_norm_)(self.segmentation_model.parameters(), max_norm=1.0)
+            torch.nn.utils.clip_grad_norm_(self.segmentation_model.parameters(), max_norm=1.0)
             # check if this is helping F-score increase above 0.5
 
             self.scaler.step(self.optimizer)
