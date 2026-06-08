@@ -428,6 +428,11 @@ class SegmentationTraining:
                                                  self.hypes['solver']['threshold'])
 
             self.scaler.scale(loss_var).backward()
+            # adding gradient clipping
+            self.scaler.unscale_(self.optimizer)
+            torch.nn.utils.clip_grad_norm_)(self.segmentation_model.parameters(), max_norm=1.0)
+            # check if this is helping F-score increase above 0.5
+
             self.scaler.step(self.optimizer)
             self.scaler.update()
 
@@ -713,52 +718,72 @@ class SegmentationTraining:
         return score
 
     def saveModel(self, type_str, epoch_ndx, score, isBest=False):
-        print(f"Saving model on rank {self.args.local_rank}")
-        file_path = os.path.join(
-            self.save_dir,
-            '{}_{}.{}.pt'.format(
-                epoch_ndx,
-                self.time_str,
-                epoch_ndx,
-            )
-        )
+        # print(f"Saving model on rank {self.args.local_rank}")
+        # file_path = os.path.join(
+        #     self.save_dir,
+        #     '{}_{}.{}.pt'.format(
+        #         epoch_ndx,
+        #         self.time_str,
+        #         epoch_ndx,
+        #     )
+        # )
 
-        os.makedirs(os.path.dirname(file_path), mode=0o755, exist_ok=True)
+        # os.makedirs(os.path.dirname(file_path), mode=0o755, exist_ok=True)
 
-        if isinstance(self.segmentation_model, torch.nn.DataParallel) or isinstance(self.segmentation_model, torch.nn.parallel.DistributedDataParallel):
+        # if isinstance(self.segmentation_model, torch.nn.DataParallel) or isinstance(self.segmentation_model, torch.nn.parallel.DistributedDataParallel):
 
-            if self.args.local_rank == 0:
-                log.info('=> saving checkpoint to {}'.format(
-                    file_path))
-                torch.save({
-                    'epoch': epoch_ndx + 1,
-                    'score': score,
-                    'state_dict': self.segmentation_model.state_dict(),
-                    'optimizer': self.optimizer.state_dict(),
-                }, file_path)
+        #     if self.args.local_rank == 0:
+        #         log.info('=> saving checkpoint to {}'.format(
+        #             file_path))
+        #         torch.save({
+        #             'epoch': epoch_ndx + 1,
+        #             'score': score,
+        #             'state_dict': self.segmentation_model.state_dict(),
+        #             'optimizer': self.optimizer.state_dict(),
+        #         }, file_path)
 
-            dist.barrier()
+        #     dist.barrier()
 
-            map_location = {'cuda:%d' % 0: 'cuda:%d' % self.args.local_rank}
-            self.segmentation_model.load_state_dict(torch.load(file_path, map_location=map_location)['state_dict'])
+        #     map_location = {'cuda:%d' % 0: 'cuda:%d' % self.args.local_rank}
+        #     self.segmentation_model.load_state_dict(torch.load(file_path, map_location=map_location)['state_dict'])
 
-        else:
-            log.info('=> saving checkpoint to {}'.format(
-                file_path + 'checkpoint.pth.tar'))
-            torch.save({
-                'epoch': epoch_ndx + 1,
-                'score': score,
-                'state_dict': self.segmentation_model.state_dict(),
-                'optimizer': self.optimizer.state_dict(),
-            }, file_path)
-        hypesout = os.path.join(self.save_dir, 'hypes.json')
+        # else:
+        #     log.info('=> saving checkpoint to {}'.format(
+        #         file_path + 'checkpoint.pth.tar'))
+        #     torch.save({
+        #         'epoch': epoch_ndx + 1,
+        #         'score': score,
+        #         'state_dict': self.segmentation_model.state_dict(),
+        #         'optimizer': self.optimizer.state_dict(),
+        #     }, file_path)
 
-        with open(hypesout, 'w+') as outfile:
-            json.dump(self.hypes, outfile, sort_keys = True, indent = 4, ensure_ascii = False)
+        # hypesout = os.path.join(self.save_dir, 'hypes.json')
 
-        log.info("Saved model params to {}".format(file_path))
+        # with open(hypesout, 'w+') as outfile:
+        #     json.dump(self.hypes, outfile, sort_keys = True, indent = 4, ensure_ascii = False)
+
+        # log.info("Saved model params to {}".format(file_path))
 
         if isBest:
+            file_path = os.path.join(
+                self.save_dir,
+                '{}_{}.{}.pt'.format(
+                    epoch_ndx,
+                    self.time_str,
+                    epoch_ndx,
+                )
+            )
+            hypesout = os.path.join(self.save_dir, 'hypes.json')
+
+            with open(hypesout, 'w+') as outfile:
+                json.dump(self.hypes, outfile, sort_keys = True, indent = 4, ensure_ascii = False)
+
+            log.info("Saved model params to {}".format(file_path))
+
+            # Remove previous best to free disk space
+            if hasattr(self, 'best_path') and os.path.exists(self.best_path):
+                os.remove(self.best_path)
+
             self.best_path = os.path.join(
                 self.save_dir,
                 f'{epoch_ndx}_{self.time_str}.best.state')
