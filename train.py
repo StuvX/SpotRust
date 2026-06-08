@@ -765,6 +765,10 @@ class SegmentationTraining:
         # log.info("Saved model params to {}".format(file_path))
 
         if isBest:
+            # Remove previous best to free disk space
+            if hasattr(self, 'best_path') and os.path.exists(self.best_path):
+                os.remove(self.best_path)
+                
             file_path = os.path.join(
                 self.save_dir,
                 '{}_{}.{}.pt'.format(
@@ -775,7 +779,7 @@ class SegmentationTraining:
             )
 
             os.makedirs(os.path.dirname(file_path), mode=0o755, exist_ok=True)
-            
+
             hypesout = os.path.join(self.save_dir, 'hypes.json')
 
             with open(hypesout, 'w+') as outfile:
@@ -783,9 +787,7 @@ class SegmentationTraining:
 
             log.info("Saved model params to {}".format(file_path))
 
-            # Remove previous best to free disk space
-            if hasattr(self, 'best_path') and os.path.exists(self.best_path):
-                os.remove(self.best_path)
+            
 
             self.best_path = os.path.join(
                 self.save_dir,
