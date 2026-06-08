@@ -773,6 +773,9 @@ class SegmentationTraining:
                     epoch_ndx,
                 )
             )
+
+            os.makedirs(os.path.dirname(file_path), mode=0o755, exist_ok=True)
+            
             hypesout = os.path.join(self.save_dir, 'hypes.json')
 
             with open(hypesout, 'w+') as outfile:
