@@ -768,37 +768,59 @@ class SegmentationTraining:
             # Remove previous best to free disk space
             if hasattr(self, 'best_path') and os.path.exists(self.best_path):
                 os.remove(self.best_path)
-                
-            file_path = os.path.join(
-                self.save_dir,
-                '{}_{}.{}.pt'.format(
-                    epoch_ndx,
-                    self.time_str,
-                    epoch_ndx,
-                )
-            )
-
-            os.makedirs(os.path.dirname(file_path), mode=0o755, exist_ok=True)
-
-            hypesout = os.path.join(self.save_dir, 'hypes.json')
-
-            with open(hypesout, 'w+') as outfile:
-                json.dump(self.hypes, outfile, sort_keys = True, indent = 4, ensure_ascii = False)
-
-            log.info("Saved model params to {}".format(file_path))
-
             
-
+            os.makedirs(self.save_dir, mode=0o755, exist_ok=True)
             self.best_path = os.path.join(
                 self.save_dir,
                 f'{epoch_ndx}_{self.time_str}.best.state')
-            shutil.copyfile(file_path, self.best_path)
 
-            log.info("Saved model params to {}".format(self.best_path))
+            torch.save({
+                'epoch': epoch_ndx + 1,
+                'score': score,
+                'state_dict': self.segmentation_model.state_dict(),
+                'optimizer': self.optimizer.state_dict(),
+            }, self.best_path)
+
+            hypesout = os.path.join(self.save_dir, 'hypes.json')
+            with open(hypesout, 'w+') as outfile:
+                json.dump(self.hypes, outfile, sort_keys=True, indent=4, ensure_ascii=False)
+
             self.hypes.update({'model': self.best_path})
+            log.info("Saved best model to {}".format(self.best_path))
 
-        with open(file_path, 'rb') as f:
-            log.info("SHA1: " + hashlib.sha1(f.read()).hexdigest())
+            with open(self.best_path, 'rb') as f:
+                log.info("SHA1: " + hashlib.sha1(f.read()).hexdigest())
+                
+        #     file_path = os.path.join(
+        #         self.save_dir,
+        #         '{}_{}.{}.pt'.format(
+        #             epoch_ndx,
+        #             self.time_str,
+        #             epoch_ndx,
+        #         )
+        #     )
+
+        #     os.makedirs(os.path.dirname(file_path), mode=0o755, exist_ok=True)
+
+        #     hypesout = os.path.join(self.save_dir, 'hypes.json')
+
+        #     with open(hypesout, 'w+') as outfile:
+        #         json.dump(self.hypes, outfile, sort_keys = True, indent = 4, ensure_ascii = False)
+
+        #     log.info("Saved model params to {}".format(file_path))
+
+            
+
+        #     self.best_path = os.path.join(
+        #         self.save_dir,
+        #         f'{epoch_ndx}_{self.time_str}.best.state')
+        #     shutil.copyfile(file_path, self.best_path)
+
+        #     log.info("Saved model params to {}".format(self.best_path))
+        #     self.hypes.update({'model': self.best_path})
+
+        # with open(file_path, 'rb') as f:
+        #     log.info("SHA1: " + hashlib.sha1(f.read()).hexdigest())
 
 def segCall(rank, world_size):
     print(f"Running DDP training on rank {rank}.")
