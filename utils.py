@@ -512,7 +512,8 @@ class varDiceLoss(_Loss):
             return (1 - fscore.mean())+0*logVar.mean()
         else:
             varLoss = 0.5*(torch.exp(-logVar)*(1-fscore) + logVar)
-            return torch.abs(varLoss.mean())
+            # return torch.abs(varLoss.mean())
+            return torch.clamp(varLoss.mean(), min=0)
 
 class diceLoss(_Loss):
     def __init__(self, epsilon=1E-6, sigmoid=False, reduction='mean'):
@@ -551,7 +552,8 @@ class bce_loss_var(_Loss):
             return bce_loss.mean()+0*logVar.mean()
         else:
             bce_var_loss = 0.5*(torch.exp(-logVar)*bce_loss+logVar)
-            return torch.abs(bce_var_loss.mean())
+            # return torch.abs(bce_var_loss.mean())
+            return torch.clamp(bce_var_loss.mean(), min=0)
 
 class mse_loss_var(_Loss):
     def __init__(self, sigmoid=False):
@@ -569,7 +571,8 @@ class mse_loss_var(_Loss):
             return mse_loss.mean()+0*logVar.mean()
         else:
             mse_var_loss = 0.5*(torch.exp(-logVar)*mse_loss+logVar)
-            return torch.abs(mse_var_loss.mean())
+            # return torch.abs(mse_var_loss.mean())
+            return torch.clamp(mse_var_loss.mean(), min=0)
 
 class comboLossVar(_Loss):
     '''Loss function that combines bce loss with diceloss'''
@@ -587,7 +590,8 @@ class comboLossVar(_Loss):
             return comboLoss.mean()+0*logVar.mean()
         else:
             comboLossVar = 0.5*(torch.exp(-1*logVar)*comboLoss+logVar)
-            return torch.abs(comboLossVar.mean())
+            # return torch.abs(comboLossVar.mean())
+            return torch.clamp(comboLossVar.mean(), min=0)
 
 def plot_to_tensorboard(writer, fig, name, step):
     """

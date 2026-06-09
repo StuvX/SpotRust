@@ -158,13 +158,19 @@ class SegmentationTraining:
     def initOptimizer(self):
         model_optimizer = self.optDict[self.hypes['solver']['opt']](self.segmentation_model.parameters(),
                                                                     lr=self.hypes['solver']['learning_rate'],
-                                                                    eps=self.hypes['solver']['adam_eps'])
-        model_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                                                                    eps=self.hypes['solver']['adam_eps'],
+                                                                    weight_decay=self.hypes['solver']['weight_decay'])
+        # model_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        #     model_optimizer,
+        #     patience=self.hypes['solver']['sched_patience'],
+        #     threshold=self.hypes['solver']['sched_thresh'],
+        #     factor=self.hypes['solver']['sched_factor'],
+        #     min_lr=1e-5,
+        # )
+        model_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             model_optimizer,
-            patience=self.hypes['solver']['sched_patience'],
-            threshold=self.hypes['solver']['sched_thresh'],
-            factor=self.hypes['solver']['sched_factor'],
-            min_lr=1e-5,
+            T_max=self.hypes['solver']['max_steps'],
+            eta_min=1e-6,
         )
         return model_optimizer, model_scheduler
 
@@ -438,6 +444,9 @@ class SegmentationTraining:
 
         self.totalTrainingSamples_count += trnMetrics_g.size(1)
 
+        # step the scheduler here if using cosine annealing
+        self.scheduler.step()
+
         return trnMetrics_g.to('cpu')
 
     def doValidation(self, epoch_ndx, val_dl):
@@ -466,8 +475,11 @@ class SegmentationTraining:
                     epoch_ndx,
                     self.hypes['solver']['threshold'],
                 )
-            val_loss = val_loss / val_dl.batch_size
-            self.scheduler.step(val_loss)
+            # val_loss = val_loss / val_dl.batch_size
+            val_loss = val_loss / max(1, (len(val_dl) - blanks))
+
+            # step the scheduler here if using reduce LR on plateau
+            # self.scheduler.step(val_loss)
         return valMetrics_g.to('cpu')
 
     def finalTest(self, test_dl):
@@ -790,7 +802,7 @@ class SegmentationTraining:
 
             with open(self.best_path, 'rb') as f:
                 log.info("SHA1: " + hashlib.sha1(f.read()).hexdigest())
-                
+
         #     file_path = os.path.join(
         #         self.save_dir,
         #         '{}_{}.{}.pt'.format(
