@@ -484,7 +484,7 @@ class SegmentationTraining:
 
     def finalTest(self, test_dl):
         map_location = {'cuda:%d' % 0: 'cuda:%d' % self.args.local_rank}
-        model_dict = torch.load(self.best_path, map_location)['state_dict']
+        model_dict = torch.load(self.best_path, map_location, weights_only=False)['state_dict']
 
         log.info('the best model is {}'.format(self.best_path))
         self.segmentation_model.load_state_dict(model_dict)
