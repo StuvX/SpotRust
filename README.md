@@ -18,9 +18,9 @@ Then create the environment from terminal as follows:
 
 The pretrained models are provided at the following Google Drive links: 
 
-* [HRNet [4.35 GB]](https://drive.google.com/file/d/196yj1ZpuuSn1Uhb8LmKANV0hmnPc2o3F/view?usp=sharing)
-* [HRNet_do [487 MB]](https://drive.google.com/file/d/12d6je9A8YOvz_9To3R0MgJzaMUu1UrRZ/view?usp=sharing)
-* [HRNet_var [521 MB]](https://drive.google.com/file/d/11GymBbJeyHkq1Td_ThSmGi4AAto20A5z/view?usp=sharing)
+* [HRNet [4.35 GB]](https://drive.google.com/file/d/1MKFMz31s4KEK-zqAawfp3pSwS1vAwkR-/view?usp=sharing)
+* [HRNet_do [487 MB]](https://drive.google.com/file/d/1u0pe0kyUl1g8HeE40KmrjQ4QO6fzm3Qo/view?usp=sharing)
+* [HRNet_var [521 MB]](https://drive.google.com/file/d/1E8DkwpbpgGaz2g6ldmdiIkYTduUdJFCx/view?usp=sharing)
 
 Download and extract the files into the 'saved'  directory, note that the model referenced in the hypes file is relative to the script path, you may need to edit it if your directory structure differs from the original. 
 
